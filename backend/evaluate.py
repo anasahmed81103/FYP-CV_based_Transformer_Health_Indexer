@@ -18,6 +18,9 @@ from core.utils import get_device
 from models.custom_cnn import CustomCNN
 from models.resnet import build_resnet
 from models.efficientnet import build_efficientnet
+from PIL import Image
+import torchvision.transforms as T
+from backend.gradCam import generate_gradcam_for_image
 
 
 # ============================================================
@@ -108,6 +111,54 @@ def evaluate_test(ckpt_path: str = cfg.CHECKPOINT_PATH):
     print(f"📈 Test MAE (0–100): {mae:.2f}")
     print(f"🎯 R²: {r2:.3f}")
     print(f"💾 Predictions saved to: {out_path}")
+
+
+
+def evaluate_transformer(image_paths):
+    device = get_device()
+    ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, f"{cfg.MODEL_NAME}_best.pth")
+    model = load_model(ckpt_path).to(device)
+    model.eval()
+
+    _, _, test_t = build_transforms(
+        image_size=cfg.IMAGE_SIZE,
+        mean=cfg.NORMALIZE_MEAN,
+        std=cfg.NORMALIZE_STD,
+        augment_cfg=cfg.AUGMENT
+    )
+
+    results = []
+    gradcam_paths = []
+
+    for idx, img_path in enumerate(image_paths):
+        img = Image.open(img_path).convert("RGB")
+        img_t = test_t(img).unsqueeze(0).to(device)
+
+        with torch.no_grad():
+            pred = model(img_t)
+            health_index = float(pred.item() * 100.0)
+            results.append(health_index)
+
+        # 🔥 Generate Grad-CAM for this uploaded image
+        gradcam_file = os.path.join(cfg.GRADCAM_DIR, f"gradcam_{idx}.jpg")
+        generate_gradcam_for_image(model, img_path, gradcam_file)
+        gradcam_paths.append(f"outputs/gradcam/gradcam_{idx}.jpg")
+
+    avg_health = sum(results) / len(results)
+
+    top_params = [
+        {"name": "Insulation Breakdown", "score": 85},
+        {"name": "Oil Contamination", "score": 78},
+        {"name": "Core Deformation", "score": 50},
+    ]
+
+    return {
+        "health_index": round(avg_health, 2),
+        "top_params": top_params,
+        "gradcam_paths": gradcam_paths,
+    }
+
+
 
 
 # ============================================================

@@ -27,7 +27,7 @@ export default function UserDashboard() {
   const [images, setImages] = useState<File[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{
-    gradcamImage: string;
+    gradcamImages: string[];
     healthIndex: number;
     topParameters: Parameter[];
   } | null>(null);
@@ -48,27 +48,43 @@ export default function UserDashboard() {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // 🔗 Connect frontend to backend via Next.js API route
   const handleAnalyze = async () => {
-    if (!transformerId.trim() || !location || !date || !time) {
-      alert('Please fill all fields before analyzing.');
+    if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
+      alert('Please fill all fields and upload at least one image.');
       return;
     }
 
     setIsAnalyzing(true);
     setAnalysisResult(null);
-    await new Promise((r) => setTimeout(r, 2000));
 
-    setAnalysisResult({
-      gradcamImage: '/gradcam_sample.png',
-      healthIndex: 76,
-      topParameters: [
-        { name: 'Insulation Breakdown', score: 85 },
-        { name: 'Oil Contamination', score: 78 },
-        { name: 'Core Deformation', score: 50 },
-      ],
-    });
+    const formData = new FormData();
+    formData.append('transformer_id', transformerId);
+    formData.append('location', location);
+    formData.append('date', date);
+    formData.append('time', time);
+    images.forEach((img) => formData.append('files', img));
 
-    setIsAnalyzing(false);
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Analysis failed.');
+      const data = await res.json();
+
+      setAnalysisResult({
+        gradcamImages: data.gradcam_paths || [],
+        healthIndex: data.health_index || 0,
+        topParameters: data.top_params || [],
+      });
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to analyze transformer images.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const getHealthClass = (value: number) => {
@@ -79,16 +95,16 @@ export default function UserDashboard() {
 
   return (
     <div className={styles.container}>
+      {/* --- History Button --- */}
       <Link href="/user_history" className={styles.historyButton}>
         <FaHistory size={16} />
         <span>History</span>
       </Link>
 
+      {/* --- Header --- */}
       <div className={styles.header}>
         <h1 className={styles.title}>Transformer Health Dashboard</h1>
-        <p className={styles.subtitle}>
-          AI-powered Transformer Condition Analysis
-        </p>
+        <p className={styles.subtitle}>AI-powered Transformer Condition Analysis</p>
       </div>
 
       {/* --- Input Form --- */}
@@ -211,27 +227,30 @@ export default function UserDashboard() {
           </div>
         ) : analysisResult ? (
           <>
-                      <div className={styles.gradcamContainer}>
-            <h2 className={styles.gradcamHeading}>Grad-CAM Preview</h2>
-
-            <div className={styles.gradcamGrid}>
-              {images.length > 0 ? (
-                images.map((_, index) => (
-                  <div key={index} className={styles.gradcamBox}>
-                    Preview {index + 1}
-                  </div>
-                ))
-              ) : (
-                <p style={{ color: "#9ca3af" }}>No images uploaded yet</p>
-              )}
+            {/* Grad-CAM Previews */}
+            <div className={styles.gradcamContainer}>
+              <h2 className={styles.gradcamHeading}>Grad-CAM Results</h2>
+              <div className={styles.gradcamGrid}>
+                {analysisResult.gradcamImages.length > 0 ? (
+                  analysisResult.gradcamImages.map((imgUrl, index) => (
+                    <div key={index} className={styles.gradcamBox}>
+                      <Image
+                        src={imgUrl.startsWith('http') ? imgUrl : `http://127.0.0.1:8000/${imgUrl}`}
+                        alt={`GradCAM-${index}`}
+                        width={200}
+                        height={200}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: '#9ca3af' }}>No GradCAM results available</p>
+                )}
+              </div>
             </div>
-          </div>
 
-
+            {/* Health Index */}
             <div className={styles.overallHealth}>
-              <h3 className={styles.overallHealthHeading}>
-                Overall Health Index
-              </h3>
+              <h3 className={styles.overallHealthHeading}>Overall Health Index</h3>
               <div className={styles.healthBarContainer}>
                 <div
                   className={`${styles.healthBar} ${getHealthClass(
@@ -241,10 +260,11 @@ export default function UserDashboard() {
                 ></div>
               </div>
               <p className={styles.healthValue}>
-                {analysisResult.healthIndex}%
+                {analysisResult.healthIndex.toFixed(1)}%
               </p>
             </div>
 
+            {/* Top Parameters */}
             <div className={styles.parameters}>
               <h3>Top 3 Affected Parameters</h3>
               <ul>
@@ -253,9 +273,7 @@ export default function UserDashboard() {
                     <span>{param.name}</span>
                     <div className={styles.paramBarContainer}>
                       <div
-                        className={`${styles.paramBar} ${getHealthClass(
-                          param.score
-                        )}`}
+                        className={`${styles.paramBar} ${getHealthClass(param.score)}`}
                         style={{ width: `${param.score}%` }}
                       ></div>
                       <strong>{param.score}%</strong>
