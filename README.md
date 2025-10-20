@@ -37,14 +37,14 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 =============================================================
 for configuration, do the following:
-
----
-
-in the root:
-pip install -r requirements.txt
-
+-------------------------------------------
 in front end:
 npm i
+
+in root also:
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 
 =============================================
 
@@ -61,85 +61,107 @@ sequence for model execution:
 -backend and its other modules like core and models have been setup so that they can run from root
 -to run front end, first cd frontend, and then npm run dev
 
+
 test account: alicena@gmail.com
-123abcABC
+              123abcABC
+
+==============================================
+execute the whole:
+
+start backend:
+python -m uvicorn backend.api.main:app --reload   
+
+start front end:
+cd frontend
+npm run dev
+
+==============================================
 
 for ease of understanding, here is the project herirarchy:
 
 Transformer_Health_Index/
 │
-├── .gitignore
-├── README.md
-├── requirements.txt
+├── .gitignore                        # Ignore rules (venv, node_modules, data, etc.)
+├── README.md                         # Project overview and setup instructions
+├── requirements.txt                  # Python dependencies
 │
-├── 📁 data/ # All datasets (ignored in git)
-│ ├── 📁 processed/
-│ │ ├── train.csv
-│ │ ├── val.csv
-│ │ └── test.csv
-│ └── 📁 raw/
-│ ├── metadata.csv
-│ └── 📁 images/
-│ ├── image1.jpg
-│ └── ...
+├── 📁 venv/                          # Python virtual environment (ignored in git)
 │
-├── 📁 core/ # Core ML utilities and preprocessing
-│ ├── **init**.py
-│ ├── augment.py
-│ ├── config.py
-│ ├── data_cleaning.py
-│ ├── dataset.py
-│ ├── hyperparameter_tuning.py
-│ └── utils.py
+├── 📁 data/                          # Raw & processed datasets (ignored in git)
+│   ├── 📁 raw/
+│   │   ├── metadata.csv
+│   │   └── 📁 images/
+│   │       ├── image1.jpg
+│   │       └── ...
+│   └── 📁 processed/
+│       ├── train.csv
+│       ├── val.csv
+│       └── test.csv
 │
-├── 📁 backend/ # Model training and evaluation scripts
-│ ├── **init**.py
-│ ├── train.py
-│ ├── evaluate.py
-│ ├── gradCam.py
-│ └── ...
+├── 📁 core/                          # Core machine learning utilities
+│   ├── __init__.py
+│   ├── augment.py                    # Data augmentation logic
+│   ├── config.py                     # Global config constants & paths
+│   ├── data_cleaning.py              # Cleaning / preprocessing
+│   ├── dataset.py                    # Custom PyTorch dataset definitions
+│   ├── hyperparameter_tuning.py      # Optimization / tuning scripts
+│   └── utils.py                      # Shared helper functions
 │
-├── 📁 models/ # Model architectures
-│ ├── **init**.py
-│ ├── custom_cnn.py
-│ ├── efficientnet.py
-│ └── resnet.py
+├── 📁 models/                        # Model architectures
+│   ├── __init__.py
+│   ├── custom_cnn.py
+│   ├── efficientnet.py
+│   └── resnet.py
 │
-├── 📁 outputs/ # Model artifacts and experiment results
-│ ├── 📁 checkpoints/
-│ │ └── custom_cnn_best.pth
-│ ├── 📁 gradcam/
-│ │ └── custom_cnn_gradcam.jpg
-│ ├── 📁 logs/
-│ └── 📁 metrics/
-│ └── custom_cnn_best_metrics.csv
+├── 📁 backend/                       # Model training, evaluation, and API
+│   ├── __init__.py
+│   ├── train.py                      # Training pipeline
+│   ├── evaluate.py                   # Evaluation + model predictions
+│   ├── gradCam.py                    # Grad-CAM generation for visualization
+│   └── 📁 api/
+│       ├── main.py                   # FastAPI app (serves /predict endpoint)
+│       └── __init__.py
 │
-├── 📁 frontend/ # Next.js + Drizzle + Supabase portal
-│ ├── .env.local
-│ ├── 📁 db/
-│ │ ├── index.ts
-│ │ └── schema.ts
-│ ├── 📁 drizzle/
-│ │ ├── 0000_migration_stuff.sql
-│ │ └── 📁 meta/
-│ │ ├── journal.json
-│ │ └── 0000_snapshot.json
-│ ├── 📁 public/ # SVGs, static assets
-│ ├── 📁 scripts/
-│ │ └── migrate.ts
-│ ├── 📁 src/app/
-│ │ ├── 📁 api/ # Next.js API routes (login, signup, etc.)
-│ │ ├── 📁 login/ # Login page (CSS + TSX)
-│ │ ├── ... (other pages)
-│ │ ├── CSS_GUIDE.md
-│ │ ├── globals.css
-│ │ ├── layout.tsx
-│ │ ├── page.tsx
-│ │ ├── page.module.css
-│ │ └── shared.module.css
-│ ├── .next/ # Next.js build (ignored)
-│ ├── node_modules/ # Dependencies (ignored)
-│ ├── package.json
-│ └── tsconfig.json
+├── 📁 outputs/                       # All generated model artifacts (ignored)
+│   ├── 📁 checkpoints/               # Saved model weights (.pth)
+│   │   └── custom_cnn_best.pth
+│   ├── 📁 gradcam/                   # Grad-CAM visualizations
+│   │   ├── gradcam_0.jpg
+│   │   └── gradcam_1.jpg
+│   ├── 📁 logs/                      # Training logs
+│   └── 📁 metrics/                   # CSV reports (MAE, R², etc.)
+│       └── custom_cnn_best_metrics.csv
 │
-└── ...
+├── 📁 frontend/                      # Next.js + Supabase web portal
+│   ├── .env.local                    # Frontend environment variables
+│   ├── 📁 db/                        # Drizzle ORM setup
+│   │   ├── index.ts
+│   │   └── schema.ts
+│   ├── 📁 drizzle/                   # SQL migrations
+│   │   ├── 0000_migration_stuff.sql
+│   │   └── 📁 meta/
+│   │       ├── journal.json
+│   │       └── 0000_snapshot.json
+│   ├── 📁 public/                    # Static assets (SVGs, icons)
+│   ├── 📁 scripts/                   # Drizzle or utility scripts
+│   │   └── migrate.ts
+│   ├── 📁 src/app/                   # Main Next.js app
+│   │   ├── 📁 api/                   # Next.js API routes → talk to FastAPI
+│   │   ├── 📁 login/                 # Login page
+│   │   ├── 📁 user_dashboard/        # Dashboard → model integration
+│   │   ├── 📁 user_history/          # History of past predictions
+│   │   ├── CSS_GUIDE.md
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── page.module.css
+│   │   └── shared.module.css
+│   ├── .next/                        # Build output (ignored)
+│   ├── node_modules/                 # JS dependencies (ignored)
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── next.config.ts                # Frontend configuration (domains, etc.)
+│
+└── 📁 temp_uploads/                  # Temporary user image uploads (ignored)
+
+
