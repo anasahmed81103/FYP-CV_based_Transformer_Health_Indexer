@@ -154,5 +154,40 @@ def main():
 # Entry Point
 # ============================================================
 
+def generate_gradcam_for_image(model, image_path, save_path):
+    """
+    Generates a Grad-CAM visualization for a given image using the existing GradCAM class.
+    """
+    device = get_device()
+
+    # --- Load and preprocess image ---
+    original = Image.open(image_path).convert("RGB")
+    transform = T.Compose([
+        T.Resize((cfg.IMAGE_SIZE, cfg.IMAGE_SIZE)),
+        T.ToTensor(),
+        T.Normalize(mean=cfg.NORMALIZE_MEAN, std=cfg.NORMALIZE_STD),
+    ])
+    x = transform(original).unsqueeze(0).to(device)
+
+    # --- Grad-CAM setup ---
+    target_layer = get_target_layer(model)
+    gradcam = GradCAM(model, target_layer)
+
+    # --- Forward & backward ---
+    output = model(x)
+    score = output.squeeze()
+    model.zero_grad()
+    score.backward()
+
+    cam = gradcam.generate()
+    overlay = overlay_cam_on_image(original, cam)
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    cv2.imwrite(save_path, cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))
+
+    return save_path
+
+
+
 if __name__ == "__main__":
     main()
