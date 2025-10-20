@@ -1,0 +1,46 @@
+# ========== NODE / NEXT.JS ==========
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+build/
+dist/
+
+# ========== PYTHON ==========
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+
+# ========== ENV & CONFIG ==========
+.env
+.env.local
+.env.*
+config.json
+secrets.json
+
+# ========== DATA / OUTPUT ==========
+data/
+datasets/
+*.csv
+*.xlsx
+*.h5
+*.pth
+*.pt
+*.model
+
+# ========== MISC ==========
+.DS_Store
+Thumbs.db
+*.pem
+*.log
+*.tmp
+
+# ========== OS / IDE ==========
+.vscode/
+.idea/
+*.swp

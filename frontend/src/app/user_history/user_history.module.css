@@ -1,0 +1,103 @@
+.container {
+  padding: 2rem;
+  background: radial-gradient(circle at top left, #0a0a0a 0%, #0c1f14 40%, #1a1a1a 100%);
+  min-height: 100vh;
+  color: #111;
+  font-family: 'Inter', sans-serif;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 700; /* slightly thinner */
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #f97316; /* orange heading */
+}
+
+.subtitle {
+  text-align: center;
+  color: #cccccc; /* optional: orange like your theme */
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+
+
+.loading, .empty {
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 0 10px rgba(0,0,0,0.08);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #000;
+}
+
+.table th, .table td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #ffffff; /* white grid lines */
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  color: #000;
+  background-color: #f1f5f9;
+  font-weight: 600;
+}
+
+.table tr:hover {
+  background-color: #f3f4f6;
+}
+
+.healthCell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.healthBar {
+  height: 8px;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  flex-shrink: 0;
+  background-color: #22c55e;
+}
+
+.paramRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #000;
+}
+
+.paramScore {
+  font-weight: 600;
+}
+
+.thumbGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.thumbGrid img {
+  width: 45px;
+  height: 45px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #d1d5db;
+}

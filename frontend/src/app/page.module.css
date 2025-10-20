@@ -1,0 +1,338 @@
+/* Main Page Styles */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #111827, #1f2937, #000000);
+  position: relative;
+  overflow: hidden;
+}
+
+.backgroundEffects {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.backgroundOrb1 {
+  position: absolute;
+  top: -10rem;
+  right: -10rem;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(251, 146, 60, 0.2);
+  border-radius: 50%;
+  filter: blur(3rem);
+  animation: pulse 2s infinite;
+}
+
+.backgroundOrb2 {
+  position: absolute;
+  bottom: -10rem;
+  left: -10rem;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 50%;
+  filter: blur(3rem);
+  animation: pulse 2s infinite 1s;
+}
+
+.backgroundOrb3 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24rem;
+  height: 24rem;
+  background: rgba(251, 146, 60, 0.1);
+  border-radius: 50%;
+  filter: blur(3rem);
+  animation: pulse 2s infinite 0.5s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.mainContent {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.contentWrapper {
+  text-align: center;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.headerSection {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(to right, #f97316, #ea580c, #10b981);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: pulse 2s infinite;
+}
+
+.subtitle {
+  font-size: 1.5rem;
+  color: #d1d5db;
+  font-weight: 300;
+}
+
+.descriptionSection {
+  margin-bottom: 3rem;
+}
+
+.description {
+  font-size: 1.25rem;
+  color: #9ca3af;
+  max-width: 42rem;
+  margin: 0 auto;
+  line-height: 1.625;
+}
+
+.navigationSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 4rem;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.loginButton {
+  position: relative;
+  padding: 1rem 2rem;
+  background: linear-gradient(to right, #f97316, #ea580c);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  transform: scale(1);
+  min-width: 11.25rem;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+.loginButton:hover {
+  box-shadow: 0 25px 50px -12px rgba(249, 115, 22, 0.25);
+  transform: scale(1.05) translateY(-0.25rem);
+}
+
+.loginButtonOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #ea580c, #dc2626);
+  border-radius: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.loginButton:hover .loginButtonOverlay {
+  opacity: 1;
+}
+
+.loginButtonText {
+  position: relative;
+  z-index: 10;
+}
+
+.signupButton {
+  position: relative;
+  padding: 1rem 2rem;
+  background: linear-gradient(to right, #10b981, #059669);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  transform: scale(1);
+  min-width: 11.25rem;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+.signupButton:hover {
+  box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.25);
+  transform: scale(1.05) translateY(-0.25rem);
+}
+
+.signupButtonOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #059669, #047857);
+  border-radius: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.signupButton:hover .signupButtonOverlay {
+  opacity: 1;
+}
+
+.signupButtonText {
+  position: relative;
+  z-index: 10;
+}
+
+.featuresGrid {
+  display: grid;
+  gap: 2rem;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.featureCard {
+  background: rgba(31, 41, 55, 0.5);
+  backdrop-filter: blur(4px);
+  border: 1px solid #374151;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.featureCard:hover {
+  border-color: rgba(249, 115, 22, 0.5);
+}
+
+.featureCard:nth-child(2):hover {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.featureIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+  transition: transform 0.3s ease;
+}
+
+.featureCard:hover .featureIcon {
+  transform: scale(1.1);
+}
+
+.featureIconOrange {
+  background: linear-gradient(to right, #f97316, #ea580c);
+}
+
+.featureIconGreen {
+  background: linear-gradient(to right, #10b981, #059669);
+}
+
+.featureIconGradient {
+  background: linear-gradient(to right, #f97316, #10b981);
+}
+
+.iconSvg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: white;
+}
+
+.featureTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.featureDescription {
+  color: #9ca3af;
+}
+
+.footer {
+  margin-top: 4rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.footerText {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (min-width: 640px) {
+  .title {
+    font-size: 5rem;
+  }
+  
+  .description {
+    font-size: 1.5rem;
+  }
+  
+  .buttonGroup {
+    flex-direction: row;
+  }
+  
+  .featuresGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .featureCard:nth-child(3) {
+    grid-column: span 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 6rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .mainContent {
+    padding: 1rem;
+  }
+  
+  .title {
+    font-size: 3rem;
+  }
+  
+  .subtitle {
+    font-size: 1.25rem;
+  }
+  
+  .description {
+    font-size: 1.125rem;
+  }
+  
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .featureCard:nth-child(3) {
+    grid-column: span 1;
+  }
+}
