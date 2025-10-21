@@ -1,7 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState , useEffect } from 'react';
 import styles from './user_dashboard.module.css';
+import 'leaflet/dist/leaflet.css';
+import dynamic from 'next/dynamic';
+
+const MapModal = dynamic(() => import('@/app/components/MapModal'), { ssr: false });
+
+
 import {
   FaPlus,
   FaMapMarkerAlt,
@@ -19,9 +25,15 @@ interface Parameter {
   score: number;
 }
 
+
+
 export default function UserDashboard() {
   const [transformerId, setTransformerId] = useState('');
   const [location, setLocation] = useState('');
+  const [coords, setCoords] = useState<[number, number] | null>(null);    // leaflet map states
+  const [showMap, setShowMap] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -38,6 +50,69 @@ export default function UserDashboard() {
     'Islamabad South',
     'Quetta Central',
   ];
+
+
+ // Run this effect once to show popup every time page loads/refreshed
+useEffect(() => {
+  if (!coords && !location) {
+    setShowLocationPrompt(true);
+  }
+}, [coords, location]);
+
+const handleLocationAccess = async () => {
+  if (!("geolocation" in navigator)) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  // Immediately close popup while fetching
+  setShowLocationPrompt(false);
+  setLocationPermissionDenied(false);
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      setCoords([latitude, longitude]);
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+        );
+        const data = await res.json();
+        setLocation(data.display_name || `${latitude}, ${longitude}`);
+      } catch (e) {
+        console.error("Reverse geocoding failed", e);
+      }
+
+      setLocationPermissionDenied(false);
+    },
+    (err) => {
+      console.warn("User denied or error:", err.message);
+
+      // Chrome will instantly reject if already denied before
+      if (err.code === err.PERMISSION_DENIED) {
+        setLocationPermissionDenied(true);
+        alert(
+          "Location access is blocked. Please enable it manually in your browser settings."
+        );
+      } else {
+        alert("Unable to access location. Try again.");
+      }
+
+      setShowLocationPrompt(false);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    }
+  );
+};
+
+
+
+
+
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -93,7 +168,10 @@ export default function UserDashboard() {
     return styles.low;
   };
 
+  
+
   return (
+    
     <div className={styles.container}>
       {/* --- History Button --- */}
       <Link href="/user_history" className={styles.historyButton}>
@@ -125,24 +203,82 @@ export default function UserDashboard() {
             />
           </div>
 
+            {/* 🌍 Location Permission Popup */}
+            {showLocationPrompt && (
+              <div className={styles.locationPopupOverlay}>
+                <div className={styles.locationPopup}>
+                  <h3>Allow Location Access</h3>
+                  <p>
+                    To automatically detect where the transformer photo was taken, please allow access to your
+                    device location.
+                  </p>
+                  <div className={styles.popupActions}>
+                    <button className={styles.allowBtn} onClick={handleLocationAccess}>
+                      Allow Access
+                    </button>
+                    <button
+                      className={styles.denyBtn}
+                      onClick={() => {
+                        setShowLocationPrompt(false);
+                        setLocationPermissionDenied(true);
+                      }}
+                    >
+                      Deny
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 🚫 Show warning if user denied location */}
+            {locationPermissionDenied && (
+              <div className={styles.locationDenied}>
+                <p>
+                  ⚠️ Location access denied. You can still select a location manually using the map button.
+                </p>
+              </div>
+            )}
+
+
           {/* Location */}
-          <div className={styles.inputGroup}>
+                  <div className={styles.inputGroup}>
             <label className={styles.label}>
               <FaMapMarkerAlt className={styles.icon} /> Location
             </label>
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className={styles.input}
-            >
-              <option value="">Select Location</option>
-              {sampleLocations.map((loc, index) => (
-                <option key={index} value={loc}>
-                  {loc}
-                </option>
-              ))}
-            </select>
+            <div className={styles.locationRow}>
+              <input
+                type="text"
+                value={location}
+                readOnly
+                placeholder="Fetching your location..."
+                className={styles.input}
+              />
+                      <button
+            type="button"
+            title="Select location from map"
+            className={styles.mapButton}
+            onClick={() => setShowMap(true)}
+          >
+            <FaMapMarkerAlt size={18} />
+          </button>
+
+            </div>
           </div>
+
+                      {showMap && (
+                       <MapModal
+                      onClose={() => setShowMap(false)}
+                      currentCoords={coords || undefined}
+                      onLocationSelect={(lat, lng, addr) => {
+                        setCoords([lat, lng]);
+                        setLocation(addr);
+                        setLocationPermissionDenied(false); // 👈 hide warning if user picked manually
+                      }}
+                    />
+
+            )}
+
+
 
           {/* Date & Time */}
           <div className={styles.datetimeContainer}>
