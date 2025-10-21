@@ -401,3 +401,128 @@
 .paramBar.high {
   background: #22c55e;
 }
+
+.locationRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mapButton {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 8px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: background 0.2s ease;
+}
+
+.mapButton:hover {
+  background: #1d4ed8;
+}
+
+
+/* Overlay for the popup */
+.locationPopupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Popup box styling */
+.locationPopup {
+  background: #fff;
+  border-radius: 14px;
+  padding: 25px 30px;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.4s ease;
+}
+
+.locationPopup h3 {
+  margin-bottom: 10px;
+  color: #222;
+  font-size: 18px;
+}
+
+.locationPopup p {
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.popupActions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.allowBtn {
+  background: #0066ff;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.allowBtn:hover {
+  background: #0050d4;
+}
+
+.denyBtn {
+  background: #ddd;
+  color: #333;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.denyBtn:hover {
+  background: #ccc;
+}
+
+.locationDenied {
+  background: #ffe6e6;
+  border: 1px solid #ffb3b3;
+  color: #b30000;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Smooth animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(25px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
