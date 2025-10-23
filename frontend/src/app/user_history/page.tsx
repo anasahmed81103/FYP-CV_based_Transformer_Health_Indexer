@@ -13,14 +13,16 @@ interface HistoryLog {
   params_scores: Record<string, number>;
   provided_images?: string[];
   grad_cam_images?: string[];
+  status: 'Healthy' | 'Moderate' | 'Critical';
 }
 
 export default function HistoryPage() {
   const [logs, setLogs] = useState<HistoryLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
 
   useEffect(() => {
-    // Temporary mock data
     const mockData: HistoryLog[] = [
       {
         id: 1,
@@ -32,6 +34,7 @@ export default function HistoryPage() {
         params_scores: { temperature: 70, vibration: 85, oil_quality: 65 },
         provided_images: ['/sample1.jpg', '/sample2.jpg'],
         grad_cam_images: ['/grad1.jpg', '/grad2.jpg'],
+        status: 'Moderate',
       },
       {
         id: 2,
@@ -43,6 +46,17 @@ export default function HistoryPage() {
         params_scores: { temperature: 88, vibration: 90, oil_quality: 85 },
         provided_images: ['/sample3.jpg'],
         grad_cam_images: [],
+        status: 'Healthy',
+      },
+      {
+        id: 3,
+        transformer_id: 'TR-303',
+        location: 'Hyderabad Power Grid',
+        inference_date: '2025-10-09',
+        inference_time: '11:20',
+        health_index_score: 42,
+        params_scores: { temperature: 40, vibration: 55, oil_quality: 30 },
+        status: 'Critical',
       },
     ];
 
@@ -52,19 +66,59 @@ export default function HistoryPage() {
     }, 800);
   }, []);
 
+  const filteredLogs = logs.filter((log) => {
+    const matchesFilter =
+      filter === '' ||
+      log.transformer_id.toLowerCase().includes(filter.toLowerCase()) ||
+      log.location.toLowerCase().includes(filter.toLowerCase());
+    const matchesDate = !dateFilter || log.inference_date === dateFilter;
+    return matchesFilter && matchesDate;
+  });
+
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Transformer Health History</h1>
-      <div >
-      <p className={styles.subtitle}>
-          Track Your Health Index History Records
-        </p>
+      {/* Header Row with Legend and Filters */}
+            <div className={styles.headerRow}>
+          <div className={styles.legend}>
+            <span className={styles.legendTitle}>Health Status:</span>
+            <span
+              className={`${styles.legendDot} ${styles.green}`}
+              data-tooltip="Healthy: Transformer operating optimally"
+            ></span>
+            <span
+              className={`${styles.legendDot} ${styles.yellow}`}
+              data-tooltip="Moderate: Slight anomalies detected"
+            ></span>
+            <span
+              className={`${styles.legendDot} ${styles.red}`}
+              data-tooltip="Critical: Requires urgent attention"
+            ></span>
+          </div>
+
+          <div className={styles.filters}>
+            <input
+              type="text"
+              placeholder="Filter by Transformer ID / Location"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className={styles.filterInput}
+            />
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className={styles.datePicker}
+            />
+          </div>
         </div>
+
+      <h1 className={styles.title}>Transformer Health History</h1>
+      <p className={styles.subtitle}>Track Your Health Index History Records</p>
 
       {loading ? (
         <p className={styles.loading}>Loading history...</p>
-      ) : logs.length === 0 ? (
-        <p className={styles.empty}>No history found.</p>
+      ) : filteredLogs.length === 0 ? (
+        <p className={styles.empty}>No matching history found.</p>
       ) : (
         <div className={styles.tableContainer}>
           <table className={styles.table}>
@@ -73,21 +127,42 @@ export default function HistoryPage() {
                 <th>Transformer ID</th>
                 <th>Location</th>
                 <th>Date</th>
-                <th>Time</th>
+                <th>Time</th>                 
                 <th>Health Index</th>
+                <th>Status</th>
                 <th>Parameters</th>
                 <th>Provided Images</th>
                 <th>Grad-CAM Images</th>
               </tr>
             </thead>
             <tbody>
-              {logs.map((log) => (
+              {filteredLogs.map((log) => (
                 <tr key={log.id}>
                   <td>{log.transformer_id}</td>
                   <td>{log.location}</td>
                   <td>{log.inference_date}</td>
                   <td>{log.inference_time}</td>
                   <td>{log.health_index_score}%</td>
+                  <td>
+                    <span
+                      className={`${styles.statusBadge} ${
+                        log.status === 'Healthy'
+                          ? styles.green
+                          : log.status === 'Moderate'
+                          ? styles.yellow
+                          : styles.red
+                      }`}
+                      title={
+                        log.status === 'Healthy'
+                          ? 'Transformer operating optimally'
+                          : log.status === 'Moderate'
+                          ? 'Slight anomalies detected'
+                          : 'Transformer requires urgent attention'
+                      }
+                    >
+                      {log.status}
+                    </span>
+                  </td>
                   <td>
                     {Object.entries(log.params_scores).map(([param, score]) => (
                       <div key={param} className={styles.paramRow}>
@@ -97,7 +172,7 @@ export default function HistoryPage() {
                     ))}
                   </td>
                   <td>
-                    {log.provided_images && log.provided_images.length > 0 ? (
+                    {log.provided_images?.length ? (
                       <div className={styles.thumbGrid}>
                         {log.provided_images.map((img, idx) => (
                           <img key={idx} src={img} alt="provided" />
@@ -108,7 +183,7 @@ export default function HistoryPage() {
                     )}
                   </td>
                   <td>
-                    {log.grad_cam_images && log.grad_cam_images.length > 0 ? (
+                    {log.grad_cam_images?.length ? (
                       <div className={styles.thumbGrid}>
                         {log.grad_cam_images.map((img, idx) => (
                           <img key={idx} src={img} alt="gradcam" />
