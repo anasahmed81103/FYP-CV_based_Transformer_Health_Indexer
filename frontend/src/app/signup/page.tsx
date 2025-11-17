@@ -58,39 +58,42 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   };
 
   // ✅ Submit handler with minimal boilerplate
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setIsLoading(true);
-  
-    try {
-      const response = await fetch("/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) throw new Error(data.error || "Signup failed");
-  
-      console.log("✅ Signup success:", data);
+ // src/app/signup/page.tsx (lines 65-87)
 
-      router.push("/login");
-      // e.g., redirect to login
-      // router.push("/login");
-    } catch (error: any) {
-      setErrors({ general: error.message });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // ✅ Submit handler with minimal boilerplate
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsLoading(true);
+  
+    try {
+      // --- CORRECTION APPLIED HERE: Options object must be inside fetch() call ---
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // IMPORTANT: Ensure your backend (api/signup/route.ts) is ready to receive
+          // firstName, lastName, email, and password separately, matching the schema change.
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) throw new Error(data.error || "Signup failed");
+  
+      console.log("✅ Signup success:", data);
 
-  
+      router.push("/login");
+    } catch (error: any) {
+      setErrors({ general: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className={styles.container}>

@@ -7,7 +7,6 @@ import yaml
 from core import config as cfg
 from backend import train
 
-
 def override_config(base_cfg: dict, updates: dict) -> dict:
     """Return a modified copy of the config with updated parameters."""
     new_cfg = copy.deepcopy(base_cfg)

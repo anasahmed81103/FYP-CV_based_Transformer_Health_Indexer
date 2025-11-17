@@ -1,9 +1,12 @@
+// user_dashboard/page.tsx
+
 'use client';
 
 import { useState , useEffect } from 'react';
 import styles from './user_dashboard.module.css';
 import 'leaflet/dist/leaflet.css';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation'; 
 
 const MapModal = dynamic(() => import('@/app/components/MapModal'), { ssr: false });
 
@@ -16,6 +19,7 @@ import {
   FaBolt,
   FaCalendarAlt,
   FaClock,
+  FaCrown, 
 } from 'react-icons/fa';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -25,15 +29,27 @@ interface Parameter {
   score: number;
 }
 
-
+type UserRole = "admin" | "user" | "suspended" | "guest";
 
 export default function UserDashboard() {
+  const router = useRouter();
+  
+  // --- STATE FOR AUTHORIZATION ---
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  
+  // Define the fixed Master Admin Email (CORRECTED)
+  const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com"; 
+  
+  // ------------------------------------
+
   const [transformerId, setTransformerId] = useState('');
   const [location, setLocation] = useState('');
-  const [coords, setCoords] = useState<[number, number] | null>(null);    // leaflet map states
+  const [coords, setCoords] = useState<[number, number] | null>(null);    
   const [showMap, setShowMap] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -44,75 +60,93 @@ const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
     topParameters: Parameter[];
   } | null>(null);
 
-  const sampleLocations = [
-    'Lahore Grid Station',
-    'Karachi Transformer Hub',
-    'Islamabad South',
-    'Quetta Central',
-  ];
-
-
- // Run this effect once to show popup every time page loads/refreshed
-useEffect(() => {
-  if (!coords && !location) {
-    setShowLocationPrompt(true);
-  }
-}, [coords, location]);
-
-const handleLocationAccess = async () => {
-  if (!("geolocation" in navigator)) {
-    alert("Geolocation is not supported by your browser.");
-    return;
-  }
-
-  // Immediately close popup while fetching
-  setShowLocationPrompt(false);
-  setLocationPermissionDenied(false);
-
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const { latitude, longitude } = pos.coords;
-      setCoords([latitude, longitude]);
-
+  // --- Authorization Check Effect ---
+  useEffect(() => {
+    const checkAuth = async () => {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
-        );
+        const res = await fetch("/api/user/role");
         const data = await res.json();
-        setLocation(data.display_name || `${latitude}, ${longitude}`);
-      } catch (e) {
-        console.error("Reverse geocoding failed", e);
+        const role: UserRole = data.role;
+        const email: string | null = data.email;
+
+        setCurrentUserRole(role);
+        setCurrentUserEmail(email);
+        
+        if (role === "suspended" || role === "guest") {
+          router.replace("/login"); 
+        } else {
+          setIsAuthLoading(false);
+        }
+
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+        router.replace("/login"); 
       }
+    };
+    checkAuth();
 
-      setLocationPermissionDenied(false);
-    },
-    (err) => {
-      console.warn("User denied or error:", err.message);
-
-      // Chrome will instantly reject if already denied before
-      if (err.code === err.PERMISSION_DENIED) {
-        setLocationPermissionDenied(true);
-        alert(
-          "Location access is blocked. Please enable it manually in your browser settings."
-        );
-      } else {
-        alert("Unable to access location. Try again.");
-      }
-
-      setShowLocationPrompt(false);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
+    if (!coords && !location) {
+      setShowLocationPrompt(true);
     }
-  );
-};
+  }, [coords, location, router]);
 
 
+  if (isAuthLoading) {
+    return <div className={styles.container}>Loading Dashboard...</div>;
+  }
+  
+  // --- CALCULATE ACCESS HERE ---
+  const canAccessAdminTools = currentUserRole === 'admin' || currentUserEmail === MASTER_ADMIN_EMAIL;
 
 
+  // --- All other handlers and helper functions remain the same (omitted for brevity) ---
+  const handleLocationAccess = async () => {
+    if (!("geolocation" in navigator)) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
 
+    setShowLocationPrompt(false);
+    setLocationPermissionDenied(false);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCoords([latitude, longitude]);
+
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await res.json();
+          setLocation(data.display_name || `${latitude}, ${longitude}`);
+        } catch (e) {
+          console.error("Reverse geocoding failed", e);
+        }
+
+        setLocationPermissionDenied(false);
+      },
+      (err) => {
+        console.warn("User denied or error:", err.message);
+
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationPermissionDenied(true);
+          alert(
+            "Location access is blocked. Please enable it manually in your browser settings."
+          );
+        } else {
+          alert("Unable to access location. Try again.");
+        }
+
+        setShowLocationPrompt(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -123,7 +157,6 @@ const handleLocationAccess = async () => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // 🔗 Connect frontend to backend via Next.js API route
   const handleAnalyze = async () => {
     if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
       alert('Please fill all fields and upload at least one image.');
@@ -168,27 +201,39 @@ const handleLocationAccess = async () => {
     return styles.low;
   };
 
-  
 
   return (
     
     <div className={styles.container}>
-      {/* --- History Button --- */}
-      <Link href="/user_history" className={styles.historyButton}>
-        <FaHistory size={16} />
-        <span>History</span>
-      </Link>
+      {/* --- CONDITIONAL ADMIN/HISTORY BUTTONS (MASTER ADMIN CHECK) --- */}
+      <div className={styles.adminButtons}>
+        
+        {/* History Button (Visible if authorized) */}
+        {canAccessAdminTools && (
+          <Link href="/user_history" className={styles.historyButton}>
+            <FaHistory size={16} />
+            <span>History</span>
+          </Link>
+        )}
+        
+        {/* Admin Page Button (Visible if authorized) */}
+        {canAccessAdminTools && (
+          <Link href="/admin" className={styles.adminButton}>
+            <FaCrown size={16} /> 
+            <span>Admin Page</span>
+          </Link>
+        )}
+      </div>
 
-      {/* --- Header --- */}
+      {/* --- Header (omitted remaining JSX for brevity) --- */}
       <div className={styles.header}>
         <h1 className={styles.title}>Transformer Health Dashboard</h1>
         <p className={styles.subtitle}>AI-powered Transformer Condition Analysis</p>
       </div>
 
-      {/* --- Input Form --- */}
+      {/* ... rest of the component content ... */}
       <div className={styles.card}>
         <div className={styles.formSection}>
-          {/* Transformer ID */}
           <div className={styles.inputGroup}>
             <label className={styles.label}>
               <FaBolt className={styles.icon} /> Transformer ID{' '}
@@ -203,45 +248,42 @@ const handleLocationAccess = async () => {
             />
           </div>
 
-            {/* 🌍 Location Permission Popup */}
-            {showLocationPrompt && (
-              <div className={styles.locationPopupOverlay}>
-                <div className={styles.locationPopup}>
-                  <h3>Allow Location Access</h3>
-                  <p>
-                    To automatically detect where the transformer photo was taken, please allow access to your
-                    device location.
-                  </p>
-                  <div className={styles.popupActions}>
-                    <button className={styles.allowBtn} onClick={handleLocationAccess}>
-                      Allow Access
-                    </button>
-                    <button
-                      className={styles.denyBtn}
-                      onClick={() => {
-                        setShowLocationPrompt(false);
-                        setLocationPermissionDenied(true);
-                      }}
-                    >
-                      Deny
-                    </button>
-                  </div>
+          {showLocationPrompt && (
+            <div className={styles.locationPopupOverlay}>
+              <div className={styles.locationPopup}>
+                <h3>Allow Location Access</h3>
+                <p>
+                  To automatically detect where the transformer photo was taken, please allow access to your
+                  device location.
+                </p>
+                <div className={styles.popupActions}>
+                  <button className={styles.allowBtn} onClick={handleLocationAccess}>
+                    Allow Access
+                  </button>
+                  <button
+                    className={styles.denyBtn}
+                    onClick={() => {
+                      setShowLocationPrompt(false);
+                      setLocationPermissionDenied(true);
+                    }}
+                  >
+                    Deny
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* 🚫 Show warning if user denied location */}
-            {locationPermissionDenied && (
-              <div className={styles.locationDenied}>
-                <p>
-                  ⚠️ Location access denied. You can still select a location manually using the map button.
-                </p>
-              </div>
-            )}
+          {locationPermissionDenied && (
+            <div className={styles.locationDenied}>
+              <p>
+                ⚠️ Location access denied. You can still select a location manually using the map button.
+              </p>
+            </div>
+          )}
 
 
-          {/* Location */}
-                  <div className={styles.inputGroup}>
+          <div className={styles.inputGroup}>
             <label className={styles.label}>
               <FaMapMarkerAlt className={styles.icon} /> Location
             </label>
@@ -253,34 +295,32 @@ const handleLocationAccess = async () => {
                 placeholder="Fetching your location..."
                 className={styles.input}
               />
-                      <button
-            type="button"
-            title="Select location from map"
-            className={styles.mapButton}
-            onClick={() => setShowMap(true)}
-          >
-            <FaMapMarkerAlt size={18} />
-          </button>
+              <button
+                type="button"
+                title="Select location from map"
+                className={styles.mapButton}
+                onClick={() => setShowMap(true)}
+              >
+                <FaMapMarkerAlt size={18} />
+              </button>
 
             </div>
           </div>
 
-                      {showMap && (
-                       <MapModal
-                      onClose={() => setShowMap(false)}
-                      currentCoords={coords || undefined}
-                      onLocationSelect={(lat, lng, addr) => {
-                        setCoords([lat, lng]);
-                        setLocation(addr);
-                        setLocationPermissionDenied(false); // 👈 hide warning if user picked manually
-                      }}
-                    />
+          {showMap && (
+            <MapModal
+              onClose={() => setShowMap(false)}
+              currentCoords={coords || undefined}
+              onLocationSelect={(lat, lng, addr) => {
+                setCoords([lat, lng]);
+                setLocation(addr);
+                setLocationPermissionDenied(false); 
+              }}
+            />
 
-            )}
+          )}
 
 
-
-          {/* Date & Time */}
           <div className={styles.datetimeContainer}>
             <div className={styles.inputGroup}>
               <label className={styles.label}>
@@ -306,7 +346,6 @@ const handleLocationAccess = async () => {
             </div>
           </div>
 
-          {/* Upload Section */}
           <div
             className={`${styles.uploadSection} ${
               images.length > 0 ? styles.hasImages : ''
@@ -352,7 +391,6 @@ const handleLocationAccess = async () => {
         </div>
       </div>
 
-      {/* --- Analysis Results --- */}
       <div className={styles.analysisSection}>
         <h2 className={styles.sectionTitle}>AI Analysis Results</h2>
 
@@ -363,7 +401,6 @@ const handleLocationAccess = async () => {
           </div>
         ) : analysisResult ? (
           <>
-            {/* Grad-CAM Previews */}
             <div className={styles.gradcamContainer}>
               <h2 className={styles.gradcamHeading}>Grad-CAM Results</h2>
               <div className={styles.gradcamGrid}>
@@ -384,7 +421,6 @@ const handleLocationAccess = async () => {
               </div>
             </div>
 
-            {/* Health Index */}
             <div className={styles.overallHealth}>
               <h3 className={styles.overallHealthHeading}>Overall Health Index</h3>
               <div className={styles.healthBarContainer}>
@@ -400,7 +436,6 @@ const handleLocationAccess = async () => {
               </p>
             </div>
 
-            {/* Top Parameters */}
             <div className={styles.parameters}>
               <h3>Top 3 Affected Parameters</h3>
               <ul>
