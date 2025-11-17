@@ -8,6 +8,20 @@
       "when": 1760366567552,
       "tag": "0000_fresh_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763292715232,
+      "tag": "0001_cool_moon_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763328030959,
+      "tag": "0002_new_killer_shrike",
+      "breakpoints": true
     }
   ]
 }
