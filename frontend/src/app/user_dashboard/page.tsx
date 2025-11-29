@@ -2,14 +2,13 @@
 
 'use client';
 
-import { useState , useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './user_dashboard.module.css';
 import 'leaflet/dist/leaflet.css';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 
 const MapModal = dynamic(() => import('@/app/components/MapModal'), { ssr: false });
-
 
 import {
   FaPlus,
@@ -19,7 +18,8 @@ import {
   FaBolt,
   FaCalendarAlt,
   FaClock,
-  FaCrown, 
+  FaCrown,
+  FaSignOutAlt,
 } from 'react-icons/fa';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -33,20 +33,20 @@ type UserRole = "admin" | "user" | "suspended" | "guest";
 
 export default function UserDashboard() {
   const router = useRouter();
-  
+
   // --- STATE FOR AUTHORIZATION ---
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  
-  // Define the fixed Master Admin Email (CORRECTED)
-  const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com"; 
-  
+
+  // Define the fixed Master Admin Email
+  const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
+
   // ------------------------------------
 
   const [transformerId, setTransformerId] = useState('');
   const [location, setLocation] = useState('');
-  const [coords, setCoords] = useState<[number, number] | null>(null);    
+  const [coords, setCoords] = useState<[number, number] | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
@@ -71,16 +71,16 @@ export default function UserDashboard() {
 
         setCurrentUserRole(role);
         setCurrentUserEmail(email);
-        
+
         if (role === "suspended" || role === "guest") {
-          router.replace("/login"); 
+          router.replace("/login");
         } else {
           setIsAuthLoading(false);
         }
 
       } catch (error) {
         console.error("Error fetching user role:", error);
-        router.replace("/login"); 
+        router.replace("/login");
       }
     };
     checkAuth();
@@ -94,12 +94,21 @@ export default function UserDashboard() {
   if (isAuthLoading) {
     return <div className={styles.container}>Loading Dashboard...</div>;
   }
-  
+
   // --- CALCULATE ACCESS HERE ---
   const canAccessAdminTools = currentUserRole === 'admin' || currentUserEmail === MASTER_ADMIN_EMAIL;
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout failed', error);
+      router.replace('/login');
+    }
+  };
 
-  // --- All other handlers and helper functions remain the same (omitted for brevity) ---
+  // --- All other handlers and helper functions ---
   const handleLocationAccess = async () => {
     if (!("geolocation" in navigator)) {
       alert("Geolocation is not supported by your browser.");
@@ -203,11 +212,10 @@ export default function UserDashboard() {
 
 
   return (
-    
     <div className={styles.container}>
       {/* --- CONDITIONAL ADMIN/HISTORY BUTTONS (MASTER ADMIN CHECK) --- */}
       <div className={styles.adminButtons}>
-        
+
         {/* History Button (Visible if authorized) */}
         {canAccessAdminTools && (
           <Link href="/user_history" className={styles.historyButton}>
@@ -215,17 +223,23 @@ export default function UserDashboard() {
             <span>History</span>
           </Link>
         )}
-        
+
         {/* Admin Page Button (Visible if authorized) */}
         {canAccessAdminTools && (
           <Link href="/admin" className={styles.adminButton}>
-            <FaCrown size={16} /> 
+            <FaCrown size={16} />
             <span>Admin Page</span>
           </Link>
         )}
+
+        {/* Logout Button (Always Visible) */}
+        <button onClick={handleLogout} className={styles.adminButton} title="Logout">
+          <FaSignOutAlt size={16} />
+          <span>Logout</span>
+        </button>
       </div>
 
-      {/* --- Header (omitted remaining JSX for brevity) --- */}
+      {/* --- Header --- */}
       <div className={styles.header}>
         <h1 className={styles.title}>Transformer Health Dashboard</h1>
         <p className={styles.subtitle}>AI-powered Transformer Condition Analysis</p>
@@ -314,10 +328,9 @@ export default function UserDashboard() {
               onLocationSelect={(lat, lng, addr) => {
                 setCoords([lat, lng]);
                 setLocation(addr);
-                setLocationPermissionDenied(false); 
+                setLocationPermissionDenied(false);
               }}
             />
-
           )}
 
 
@@ -347,9 +360,8 @@ export default function UserDashboard() {
           </div>
 
           <div
-            className={`${styles.uploadSection} ${
-              images.length > 0 ? styles.hasImages : ''
-            }`}
+            className={`${styles.uploadSection} ${images.length > 0 ? styles.hasImages : ''
+              }`}
           >
             <h3 className={styles.uploadHeading}>Upload Transformer Images</h3>
 

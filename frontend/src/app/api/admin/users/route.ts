@@ -5,8 +5,8 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
 // FIX: Corrected import path (FIVE levels up from route.ts)
-import { db } from "../../../../../db"; 
-import { users } from "../../../../../db/schema"; 
+import { db } from "../../../../../db";
+import { users } from "../../../../../db/schema";
 
 interface TokenPayload {
     role: "admin" | "user" | "suspended";
@@ -15,10 +15,23 @@ interface TokenPayload {
 
 const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
 
-export async function GET() {
+// Helper function to extract token from either Cookie or Authorization header
+async function getAuthToken(req: Request): Promise<string | null> {
+    // Try Authorization header first (for Flutter Web)
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.substring(7);
+    }
+
+    // Fallback to cookie (for web browser)
+    const cookieStore = await cookies();
+    return cookieStore.get("token")?.value || null;
+}
+
+export async function GET(req: Request) {
     try {
-        const token = cookies().get("token")?.value;
-        
+        const token = await getAuthToken(req);
+
         // --- 1. AUTHORIZATION CHECK ---
         if (!token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -36,7 +49,7 @@ export async function GET() {
         const userList = await db.query.users.findMany({
             columns: {
                 id: true,
-                firstName: true, 
+                firstName: true,
                 lastName: true,
                 email: true,
                 role: true,
@@ -47,10 +60,10 @@ export async function GET() {
         const formattedUsers = userList.map(user => ({
             id: user.id,
             // Combine first and last name
-            name: `${user.firstName} ${user.lastName}`, 
+            name: `${user.firstName} ${user.lastName}`,
             email: user.email,
             // Format role and derive status
-            role: user.role === 'admin' ? 'Admin' : 'User', 
+            role: user.role === 'admin' ? 'Admin' : 'User',
             status: user.role === 'suspended' ? 'Suspended' : 'Active',
         }));
 

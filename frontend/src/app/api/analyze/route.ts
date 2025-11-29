@@ -6,6 +6,19 @@ import { analysisLogs } from "../../../../db/schema";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
+// Helper function to extract token from either Cookie or Authorization header
+async function getAuthToken(req: Request): Promise<string | null> {
+    // Try Authorization header first (for Flutter Web)
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.substring(7);
+    }
+
+    // Fallback to cookie (for web browser)
+    const cookieStore = await cookies();
+    return cookieStore.get("token")?.value || null;
+}
+
 export async function POST(req: Request) {
     let rawFormData: FormData;
     try {
@@ -13,11 +26,11 @@ export async function POST(req: Request) {
     } catch (e) {
         return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
     }
-    
+
     // 1. EXTRACT DATA AND AUTHORIZATION
-    const token = cookies().get("token")?.value;
+    const token = await getAuthToken(req);
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    
+
     const secret = process.env.JWT_SECRET!;
     const decoded = jwt.verify(token, secret) as { id: number, role: string }; // Get user ID from token
     const userId = decoded.id;
@@ -26,7 +39,7 @@ export async function POST(req: Request) {
     const location = rawFormData.get('location') as string;
     const date = rawFormData.get('date') as string;
     const time = rawFormData.get('time') as string;
-    
+
     // Extract images paths/data if needed, but for analysis, we pass the file objects.
 
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
@@ -39,16 +52,16 @@ export async function POST(req: Request) {
         });
 
         if (!res.ok) {
-             const errorData = await res.json();
-             throw new Error(errorData.detail || "Analysis backend error");
+            const errorData = await res.json();
+            throw new Error(errorData.detail || "Analysis backend error");
         }
 
         const analysisData = await res.json();
-        
+
         // 3. PROCESS ANALYSIS RESULTS
         const healthIndexScore = analysisData.healthIndex || 0;
         const status = healthIndexScore > 80 ? 'Healthy' : healthIndexScore > 60 ? 'Moderate' : 'Critical';
-        
+
         // Simple conversion of array to object for paramsScores based on expected format
         const paramsScores = (analysisData.topParameters || []).reduce((acc: Record<string, number>, p: { name: string, score: number }) => {
             acc[p.name] = p.score;
