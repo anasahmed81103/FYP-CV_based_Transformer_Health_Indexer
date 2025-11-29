@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import styles from './user_history.module.css';
 import { useRouter } from 'next/navigation';
+import { FaSignOutAlt } from 'react-icons/fa';
 
 // Define possible user roles
 type UserRole = "admin" | "user" | "suspended" | "guest";
@@ -29,7 +30,7 @@ export default function HistoryPage() {
     const [fetchError, setFetchError] = useState<string | null>(null); // New state for error display
     const [filter, setFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
-    
+
     // --- NEW STATE FOR AUTHORIZATION ---
     const [isAuthLoading, setIsAuthLoading] = useState(true);
     const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
@@ -41,12 +42,12 @@ export default function HistoryPage() {
         setFetchError(null);
         try {
             // New API endpoint to fetch user's history
-            const res = await fetch("/api/history"); 
+            const res = await fetch("/api/history");
 
-            if (res.status === 401) { 
-                 // If token expired during fetch, redirect to login
-                 router.replace("/login"); 
-                 return;
+            if (res.status === 401) {
+                // If token expired during fetch, redirect to login
+                router.replace("/login");
+                return;
             }
 
             if (!res.ok) {
@@ -57,7 +58,7 @@ export default function HistoryPage() {
                 } catch {
                     // Ignore JSON parsing error if server returned HTML/plain text
                 }
-                
+
                 const errorMessage = (errorData as any).error || `Server error (Status: ${res.status})`;
                 throw new Error(errorMessage);
             }
@@ -83,12 +84,12 @@ export default function HistoryPage() {
                 const res = await fetch("/api/user/role");
                 const data = await res.json();
                 const role: UserRole = data.role;
-                const email: string | null = data.email; 
+                const email: string | null = data.email;
 
                 const canAccess = role === "admin" || email === MASTER_ADMIN_EMAIL;
-                
+
                 if (!canAccess) {
-                    router.replace("/user_dashboard"); 
+                    router.replace("/user_dashboard");
                 } else {
                     setIsAuthLoading(false);
                     // If authorized, proceed to fetch data
@@ -97,7 +98,7 @@ export default function HistoryPage() {
 
             } catch (error) {
                 console.error("Error fetching user role:", error);
-                router.replace("/user_dashboard"); 
+                router.replace("/user_dashboard");
             }
         };
         checkAuth();
@@ -108,14 +109,23 @@ export default function HistoryPage() {
     if (isAuthLoading) {
         return <div className={styles.container}>Checking Admin Access...</div>;
     }
-    
-    
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/logout', { method: 'POST' });
+            router.replace('/login');
+        } catch (error) {
+            console.error('Logout failed', error);
+            router.replace('/login');
+        }
+    };
+
     const filteredLogs = logs.filter((log) => {
         const matchesFilter =
             filter === '' ||
-            log.transformerId.toLowerCase().includes(filter.toLowerCase()) || 
+            log.transformerId.toLowerCase().includes(filter.toLowerCase()) ||
             log.location.toLowerCase().includes(filter.toLowerCase());
-        const matchesDate = !dateFilter || log.inferenceDate === dateFilter; 
+        const matchesDate = !dateFilter || log.inferenceDate === dateFilter;
         return matchesFilter && matchesDate;
     });
 
@@ -153,6 +163,10 @@ export default function HistoryPage() {
                         onChange={(e) => setDateFilter(e.target.value)}
                         className={styles.datePicker}
                     />
+                    <button onClick={handleLogout} className={styles.logoutButton} title="Logout" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '1rem' }}>
+                        <FaSignOutAlt size={16} />
+                        <span>Logout</span>
+                    </button>
                 </div>
             </div>
 
@@ -174,7 +188,7 @@ export default function HistoryPage() {
                                 <th>Transformer ID</th>
                                 <th>Location</th>
                                 <th>Date</th>
-                                <th>Time</th>         
+                                <th>Time</th>
                                 <th>Health Index</th>
                                 <th>Status</th>
                                 <th>Parameters</th>
@@ -192,19 +206,18 @@ export default function HistoryPage() {
                                     <td>{log.healthIndexScore}%</td>
                                     <td>
                                         <span
-                                            className={`${styles.statusBadge} ${
-                                                log.status === 'Healthy'
+                                            className={`${styles.statusBadge} ${log.status === 'Healthy'
                                                     ? styles.green
                                                     : log.status === 'Moderate'
-                                                    ? styles.yellow
-                                                    : styles.red
-                                            }`}
+                                                        ? styles.yellow
+                                                        : styles.red
+                                                }`}
                                             title={
                                                 log.status === 'Healthy'
                                                     ? 'Transformer operating optimally'
                                                     : log.status === 'Moderate'
-                                                    ? 'Slight anomalies detected'
-                                                    : 'Transformer requires urgent attention'
+                                                        ? 'Slight anomalies detected'
+                                                        : 'Transformer requires urgent attention'
                                             }
                                         >
                                             {log.status}

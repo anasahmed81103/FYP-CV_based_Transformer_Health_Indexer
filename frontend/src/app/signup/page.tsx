@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import styles from './signup.module.css';
 import { useRouter } from 'next/navigation';
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-
+import { Mail, Lock, Eye, EyeOff, User, UserPlus } from 'lucide-react';
+import styles from './signup.module.css';
 
 export default function SignupPage() {
-  const router = useRouter(); 
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -19,19 +18,14 @@ export default function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-
-  // ✅ Generic input handler
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // clear field-specific error on change
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  // ✅ Validation (shorter, cleaner)
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     const { firstName, lastName, email, password, confirmPassword } = formData;
@@ -46,8 +40,7 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     else if (password.length < 8)
       newErrors.password = 'Password must be at least 8 characters';
     else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password))
-      newErrors.password =
-        'Password must contain uppercase, lowercase, and a number';
+      newErrors.password = 'Password must contain uppercase, lowercase, and a number';
 
     if (!confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
     else if (password !== confirmPassword)
@@ -57,164 +50,185 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ Submit handler with minimal boilerplate
- // src/app/signup/page.tsx (lines 65-87)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsLoading(true);
 
-  // ✅ Submit handler with minimal boilerplate
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setIsLoading(true);
-  
-    try {
-      // --- CORRECTION APPLIED HERE: Options object must be inside fetch() call ---
-      const response = await fetch("/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          // IMPORTANT: Ensure your backend (api/signup/route.ts) is ready to receive
-          // firstName, lastName, email, and password separately, matching the schema change.
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) throw new Error(data.error || "Signup failed");
-  
-      console.log("✅ Signup success:", data);
+    try {
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-      router.push("/login");
-    } catch (error: any) {
-      setErrors({ general: error.message });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Signup failed");
+
+      router.push("/verify-email");
+    } catch (error: any) {
+      setErrors({ general: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className={styles.container}>
       <div className={styles.backgroundEffects}>
-        <div className={styles.backgroundGradients}></div>
-        <div className={styles.backgroundPattern}></div>
+        <div className={styles.orb1}></div>
+        <div className={styles.orb2}></div>
       </div>
 
-      <div className={styles.card}>
+      <div className={styles.formCard}>
         <div className={styles.header}>
+          <div className={styles.iconWrapper}>
+            <UserPlus size={32} />
+          </div>
           <h1 className={styles.title}>Create Account</h1>
-          <p className={styles.subtitle}>Join us today and get started</p>
+          <p className={styles.subtitle}>Join us and start analyzing transformers</p>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          {errors.general && <div className={styles.errorMessage}>{errors.general}</div>}
+          {errors.general && (
+            <div className={styles.errorAlert}>
+              {errors.general}
+            </div>
+          )}
 
           {/* Name Row */}
           <div className={styles.nameRow}>
-            {['firstName', 'lastName'].map((field) => (
-              <div key={field} className={styles.inputGroup}>
-                <label htmlFor={field} className={styles.label}>
-                  {field === 'firstName' ? 'First Name' : 'Last Name'}
-                </label>
+            <div className={styles.formGroup}>
+              <label htmlFor="firstName" className={styles.label}>
+                First Name
+              </label>
+              <div className={styles.inputWrapper}>
+                <User className={styles.inputIcon} size={20} />
                 <input
                   type="text"
-                  id={field}
-                  name={field}
-                  value={formData[field as keyof typeof formData]}
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
                   onChange={handleChange}
-                  placeholder={field === 'firstName' ? 'John' : 'Doe'}
+                  placeholder="John"
                   disabled={isLoading}
-                  className={`${styles.input} ${errors[field] ? styles.inputError : ''}`}
+                  className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
                 />
-                {errors[field] && <span className={styles.errorText}>{errors[field]}</span>}
               </div>
-            ))}
+              {errors.firstName && <span className={styles.errorText}>{errors.firstName}</span>}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="lastName" className={styles.label}>
+                Last Name
+              </label>
+              <div className={styles.inputWrapper}>
+                <User className={styles.inputIcon} size={20} />
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Doe"
+                  disabled={isLoading}
+                  className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
+                />
+              </div>
+              {errors.lastName && <span className={styles.errorText}>{errors.lastName}</span>}
+            </div>
           </div>
 
-          {/* Email */}
-          <div className={styles.inputGroup}>
+          {/* Email Field */}
+          <div className={styles.formGroup}>
             <label htmlFor="email" className={styles.label}>
               Email Address
             </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="john.doe@example.com"
-              disabled={isLoading}
-              className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-            />
+            <div className={styles.inputWrapper}>
+              <Mail className={styles.inputIcon} size={20} />
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="john.doe@example.com"
+                disabled={isLoading}
+                className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+              />
+            </div>
             {errors.email && <span className={styles.errorText}>{errors.email}</span>}
           </div>
 
-          {/* Password */}
-              <div className={styles.inputGroup}>
-                <label htmlFor="password" className={styles.label}>
-                  Password
-                </label>
-                <div className={styles.passwordWrapper}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Create a strong password"
-                    disabled={isLoading}
-                    className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={styles.eyeButton}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-                {errors.password && <span className={styles.errorText}>{errors.password}</span>}
-              </div>
+          {/* Password Field */}
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={styles.label}>
+              Password
+            </label>
+            <div className={styles.inputWrapper}>
+              <Lock className={styles.inputIcon} size={20} />
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create a strong password"
+                disabled={isLoading}
+                className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className={styles.eyeButton}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            {errors.password && <span className={styles.errorText}>{errors.password}</span>}
+          </div>
 
-              {/* Confirm Password */}
-              <div className={styles.inputGroup}>
-                <label htmlFor="confirmPassword" className={styles.label}>
-                  Confirm Password
-                </label>
-                <div className={styles.passwordWrapper}>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm your password"
-                    disabled={isLoading}
-                    className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className={styles.eyeButton}
-                    tabIndex={-1}
-                  >
-                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <span className={styles.errorText}>{errors.confirmPassword}</span>
-                )}
-              </div>
-
+          {/* Confirm Password Field */}
+          <div className={styles.formGroup}>
+            <label htmlFor="confirmPassword" className={styles.label}>
+              Confirm Password
+            </label>
+            <div className={styles.inputWrapper}>
+              <Lock className={styles.inputIcon} size={20} />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                disabled={isLoading}
+                className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className={styles.eyeButton}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
+          </div>
 
           {/* Terms Checkbox */}
           <div className={styles.terms}>
             <label className={styles.checkboxLabel}>
               <input type="checkbox" className={styles.checkbox} required />
-              <span className={styles.checkboxText}>
+              <span>
                 I agree to the{' '}
                 <Link href="/terms" className={styles.link}>
                   Terms of Service
@@ -231,14 +245,22 @@ const [showConfirmPassword, setShowConfirmPassword] = useState(false);
           <button
             type="submit"
             disabled={isLoading}
-            className={`${styles.submitButton} ${isLoading ? styles.loading : ''}`}
+            className={styles.submitButton}
           >
-            {isLoading ? <span className={styles.spinner}></span> : 'Create Account'}
+            {isLoading ? (
+              <div className={styles.spinner}></div>
+            ) : (
+              <>
+                <span>Create Account</span>
+                <UserPlus size={20} />
+              </>
+            )}
           </button>
         </form>
 
+        {/* Footer */}
         <div className={styles.footer}>
-          <p className={styles.footerText}>
+          <p>
             Already have an account?{' '}
             <Link href="/login" className={styles.link}>
               Sign in
