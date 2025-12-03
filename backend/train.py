@@ -1,5 +1,4 @@
 import os, sys
-# Add project root to sys.path (works on any OS)
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
@@ -21,30 +20,27 @@ from models.resnet import build_resnet
 from models.efficientnet import build_efficientnet
 
 
-# ============================================================
-# Model / Optimizer / Scheduler Builders
-# ============================================================
-
+# -----------------------------------------------------------
+# Build Model
+# -----------------------------------------------------------
 def build_model():
-    """Constructs model according to config and applies optional backbone freezing."""
     name = cfg.MODEL_NAME
     pretrained = cfg.PRETRAINED
     dropout = cfg.DROPOUT
 
-    # --- Model Selection ---
     if name == "custom_cnn":
         model = CustomCNN(dropout=dropout)
     elif "resnet" in name:
-        model = build_resnet(model_name=name, pretrained=pretrained, dropout=dropout)
+        model = build_resnet(name, pretrained, dropout)
     elif "efficientnet" in name:
-        model = build_efficientnet(model_name=name, pretrained=pretrained, dropout=dropout)
+        model = build_efficientnet(name)
     else:
-        raise ValueError(f"❌ Unknown MODEL_NAME: {name}")
+        raise ValueError(f"Unknown model: {name}")
 
-    # --- Freeze Backbone (optional) ---
     if cfg.FREEZE_BACKBONE and name != "custom_cnn":
         for p in model.parameters():
             p.requires_grad = False
+        # unfreeze classifier head
         if hasattr(model, "fc"):
             for p in model.fc.parameters():
                 p.requires_grad = True
@@ -55,127 +51,117 @@ def build_model():
     return model
 
 
-def get_optimizer(model_params):
+# -----------------------------------------------------------
+# Optimizer
+# -----------------------------------------------------------
+def get_optimizer(params):
     lr = cfg.LEARNING_RATE
     wd = cfg.WEIGHT_DECAY
     opt = cfg.OPTIMIZER.lower()
 
     if opt == "adamw":
-        return torch.optim.AdamW(model_params, lr=lr, weight_decay=wd)
-    elif opt == "sgd":
-        return torch.optim.SGD(model_params, lr=lr, momentum=0.9, weight_decay=wd, nesterov=True)
-    else:
-        return torch.optim.Adam(model_params, lr=lr, weight_decay=wd)
+        return torch.optim.AdamW(params, lr=lr, weight_decay=wd)
+    if opt == "sgd":
+        return torch.optim.SGD(params, lr=lr, momentum=0.9, nesterov=True, weight_decay=wd)
+
+    return torch.optim.Adam(params, lr=lr, weight_decay=wd)
 
 
 def get_scheduler(optimizer):
-    sched = cfg.SCHEDULER
-    if sched == "step":
+    if cfg.SCHEDULER == "step":
         return torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    elif sched == "plateau":
-        return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5)
-    elif sched == "cosine":
+    if cfg.SCHEDULER == "plateau":
+        return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", factor=0.5, patience=5)
+    if cfg.SCHEDULER == "cosine":
         return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.NUM_EPOCHS)
     return None
 
 
-# ============================================================
-# Training & Evaluation Loops
-# ============================================================
-
-def train_one_epoch(model, loader, criterion, optimizer, device, scaler=None):
-    """Run one training epoch."""
+# -----------------------------------------------------------
+# Training Loop
+# -----------------------------------------------------------
+def train_one_epoch(model, loader, criterion, optimizer, device):
     model.train()
-    running_loss = 0.0
+    total_loss = 0
 
     for imgs, targets in tqdm(loader, desc="Train", leave=False):
         imgs = imgs.to(device)
-        targets = targets.to(device).unsqueeze(1)
+        targets = targets.to(device)  # [B,13]
 
         optimizer.zero_grad()
-        if scaler:
-            with torch.cuda.amp.autocast():
-                outputs = model(imgs)
-                loss = criterion(outputs, targets)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            outputs = model(imgs)
-            loss = criterion(outputs, targets)
-            loss.backward()
-            optimizer.step()
+        outputs = model(imgs)         # [B,13]
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.step()
 
-        running_loss += loss.item() * imgs.size(0)
+        total_loss += loss.item() * imgs.size(0)
 
-    return running_loss / len(loader.dataset)
+    return total_loss / len(loader.dataset)
 
 
+# -----------------------------------------------------------
+# Eval Loop
+# -----------------------------------------------------------
 def evaluate(model, loader, criterion, device):
-    """Evaluate model performance on validation data."""
     model.eval()
-    losses, preds_list, targets_list = [], [], []
+    losses, preds, trues = [], [], []
 
     with torch.no_grad():
         for imgs, targets in tqdm(loader, desc="Val", leave=False):
             imgs = imgs.to(device)
-            targets = targets.to(device).unsqueeze(1)
-            outputs = model(imgs)
+            targets = targets.to(device)
+
+            outputs = model(imgs)  # [B,13]
             loss = criterion(outputs, targets)
+
             losses.append(loss.item() * imgs.size(0))
-            preds_list.extend(outputs.squeeze(1).cpu().tolist())
-            targets_list.extend(targets.squeeze(1).cpu().tolist())
+            preds.append(outputs.cpu())
+            trues.append(targets.cpu())
+
+    preds = torch.cat(preds, dim=0).numpy()  # [N,13]
+    trues = torch.cat(trues, dim=0).numpy()  # [N,13]
 
     avg_loss = sum(losses) / len(loader.dataset)
-    preds_scaled = [p * 100.0 for p in preds_list]
-    targets_scaled = [t * 100.0 for t in targets_list]
-    mae = mean_absolute_error(targets_scaled, preds_scaled)
+    mae = mean_absolute_error(trues * 6, preds * 6)  # scale back if normalized
+
     return avg_loss, mae
 
 
-# ============================================================
-# Main Training Routine
-# ============================================================
-
+# -----------------------------------------------------------
+# Main
+# -----------------------------------------------------------
 def main():
     set_seed(cfg.SEED)
     device = get_device()
 
-    # --- Build Transforms ---
+    # Only resize + normalize transforms
     train_t, val_t, _ = build_transforms(
         image_size=cfg.IMAGE_SIZE,
         mean=cfg.NORMALIZE_MEAN,
         std=cfg.NORMALIZE_STD,
-        augment_cfg=cfg.AUGMENT
+        augment_cfg={}  # disable augmentation
     )
 
-    # --- Datasets / DataLoaders ---
-    train_csv = os.path.join(cfg.PROCESSED_DIR, "train.csv")
-    val_csv = os.path.join(cfg.PROCESSED_DIR, "val.csv")
+    # Load datasets
+    train_ds = TransformerHealthDataset(os.path.join(cfg.PROCESSED_DIR, "train.csv"), transform=train_t)
+    val_ds = TransformerHealthDataset(os.path.join(cfg.PROCESSED_DIR, "val.csv"), transform=val_t)
 
-    train_ds = TransformerHealthDataset(train_csv, transform=train_t)
-    val_ds = TransformerHealthDataset(val_csv, transform=val_t)
+    train_loader = DataLoader(train_ds, batch_size=cfg.BATCH_SIZE, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_ds, batch_size=cfg.BATCH_SIZE, shuffle=False, num_workers=4)
 
-    pin_memory = device.type == "cuda"
-    train_loader = DataLoader(train_ds, batch_size=cfg.BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=pin_memory)
-    val_loader = DataLoader(val_ds, batch_size=cfg.BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=pin_memory)
-
-    # --- Build Model & Training Components ---
     model = build_model().to(device)
-    criterion = nn.L1Loss()
+    criterion = nn.L1Loss()  # regression loss
     optimizer = get_optimizer(model.parameters())
     scheduler = get_scheduler(optimizer)
-    scaler = torch.cuda.amp.GradScaler() if (cfg.MIXED_PRECISION and device.type == "cuda") else None
 
-    # --- Training State ---
     best_mae = math.inf
     patience = cfg.EARLY_STOPPING_PATIENCE
-    no_improve = 0
+    no_imp = 0
 
-    # --- Training Loop ---
     for epoch in range(1, cfg.NUM_EPOCHS + 1):
-        print(f"\n🚀 Epoch {epoch}/{cfg.NUM_EPOCHS}")
-        train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device, scaler)
+        print(f"\nEpoch {epoch}/{cfg.NUM_EPOCHS}")
+
+        tr_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
         val_loss, val_mae = evaluate(model, val_loader, criterion, device)
 
         if scheduler:
@@ -184,27 +170,20 @@ def main():
             else:
                 scheduler.step()
 
-        print(f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val MAE (0–100): {val_mae:.2f}")
+        print(f"Train: {tr_loss:.4f} | Val Loss: {val_loss:.4f} | MAE(0–6): {val_mae:.2f}")
 
-        # --- Early Stopping / Checkpointing ---
+        # Save best checkpoint
         if val_mae < best_mae:
             best_mae = val_mae
-            no_improve = 0
+            no_imp = 0
             ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, f"{cfg.MODEL_NAME}_best.pth")
             save_checkpoint(model, optimizer, epoch, best_mae, ckpt_path)
-            print(f"💾 Saved checkpoint: {ckpt_path}")
         else:
-            no_improve += 1
-            print(f"⏸ No improvement ({no_improve}/{patience})")
+            no_imp += 1
+            if no_imp >= patience:
+                print("Early stopping.")
+                break
 
-        if no_improve >= patience:
-            print("🛑 Early stopping triggered.")
-            break
-
-
-# ============================================================
-# Entry Point
-# ============================================================
 
 if __name__ == "__main__":
     main()
