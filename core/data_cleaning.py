@@ -1,4 +1,6 @@
-import os, sys
+import os
+import sys
+
 # Add project root to sys.path (works on any OS)
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
@@ -13,41 +15,39 @@ from core import config as cfg
 
 def clean_and_split(test_size: float = 0.15, val_size: float = 0.15, seed: int = cfg.SEED):
     """
-    Cleans metadata.csv and splits dataset into train, validation, and test CSVs.
-
-    Args:
-        test_size (float): Fraction of data for test set.
-        val_size (float): Fraction of data for validation set.
-        seed (int): Random seed for reproducibility.
+    Cleans metadata and splits dataset into train, validation, and test CSVs.
+    Drops ID column, keeps all other columns, puts image_path as first column.
     """
     os.makedirs(cfg.PROCESSED_DIR, exist_ok=True)
 
     # === Load metadata ===
-    df = pd.read_csv(cfg.META_FILE)
-    assert "image_path" in df.columns, "❌ metadata.csv must contain 'image_path' column"
-    assert "health_index" in df.columns, "❌ metadata.csv must contain 'health_index' column"
+    df = pd.read_excel(cfg.META_FILE)
 
-    # === Drop missing ===
-    df = df.dropna(subset=["image_path", "health_index"])
+    # === Check required columns ===
+    assert "ID" in df.columns, "❌ metadata file must contain 'ID' column"
+    assert "Overall_Health_Index" in df.columns, "❌ metadata file must contain 'Overall_Health_Index' column"
 
-    # === Verify image paths ===
+    # === Drop missing values in essential columns ===
+    df = df.dropna(subset=["ID", "Overall_Health_Index"])
+
+    # === Generate absolute image paths ===
     abs_paths = []
-    for p in tqdm(df["image_path"], desc="Verifying image paths"):
-        abs_p = os.path.join(cfg.IMAGES_DIR, os.path.basename(p)) if not os.path.isabs(p) else p
+    for idx in tqdm(df["ID"], desc="Generating image paths"):
+        img_name = f"{idx}.jpg"  # your images are named 1.jpg, 2.jpg, ...
+        abs_p = os.path.join(cfg.IMAGES_DIR, img_name)
         abs_paths.append(abs_p if os.path.exists(abs_p) else None)
-    df["abs_image_path"] = abs_paths
-    df = df.dropna(subset=["abs_image_path"])
+    df["image_path"] = abs_paths
 
-    # === Clip target values ===
-    df["health_index"] = df["health_index"].clip(lower=0, upper=100)
+    # Drop rows where image file is missing
+    df = df.dropna(subset=["image_path"])
 
     # === Create bins for stratified split ===
     bins = np.linspace(0, 100, 11)
-    df["bin"] = np.digitize(df["health_index"], bins)
+    df["bin"] = np.digitize(df["Overall_Health_Index"], bins)
     valid_bins = df["bin"].value_counts()[lambda x: x >= 2].index
     df = df[df["bin"].isin(valid_bins)]
 
-    # === Split ===
+    # === Split dataset ===
     train_df, test_df = train_test_split(
         df, test_size=test_size, random_state=seed, stratify=df["bin"]
     )
@@ -55,12 +55,17 @@ def clean_and_split(test_size: float = 0.15, val_size: float = 0.15, seed: int =
         train_df, test_size=val_size, random_state=seed, stratify=train_df["bin"]
     )
 
-    # === Save cleaned CSVs ===
+    # === Save CSVs with image_path first and all other columns intact ===
     for split_name, split_df in zip(["train", "val", "test"], [train_df, val_df, test_df]):
         out_path = os.path.join(cfg.PROCESSED_DIR, f"{split_name}.csv")
-        split_df[["abs_image_path", "health_index"]].rename(
-            columns={"abs_image_path": "image_path"}
-        ).to_csv(out_path, index=False)
+
+        # Drop unnecessary columns
+        save_df = split_df.drop(columns=["ID", "bin"], errors="ignore")
+        # Reorder so image_path is first
+        cols = ["image_path"] + [c for c in save_df.columns if c != "image_path"]
+        save_df = save_df[cols]
+
+        save_df.to_csv(out_path, index=False)
 
     print("✅ Cleaned and saved train/val/test splits to:")
     print(f"   {cfg.PROCESSED_DIR}")
