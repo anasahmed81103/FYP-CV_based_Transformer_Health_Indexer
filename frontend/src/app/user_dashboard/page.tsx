@@ -131,9 +131,10 @@ export default function UserDashboard() {
   // --- ANALYZE ---
   const handleAnalyze = async () => {
     if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
-      alert('Fill all fields and upload at least one image.');
+      alert('Please fill all fields and upload at least one image.');
       return;
     }
+
     setIsAnalyzing(true);
     setAnalysisResult(null);
 
@@ -147,14 +148,18 @@ export default function UserDashboard() {
     try {
       const res = await fetch('/api/analyze', { method: 'POST', body: formData });
       if (!res.ok) throw new Error('Analysis failed.');
-
       const data = await res.json();
+
+      // Map backend response to frontend state
       setAnalysisResult({
-        gradcamImages: data.gradcamImages || [],
+        gradcamImages: data.gradCamImages || [],
         healthIndex: data.healthIndex || 0,
-        allParameters: data.allParameters || [],
+        allParameters: Object.entries(data.paramsScores || {}).map(
+          ([name, score]) => ({ name, score: Number(score) })
+        ),
       });
-    } catch {
+    } catch (err: any) {
+      console.error(err);
       alert('Failed to analyze transformer images.');
     } finally {
       setIsAnalyzing(false);
