@@ -1,29 +1,28 @@
 import os
 
 # ========= Base (project root) =========
-# This resolves to the repo root, not the /core folder
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ========= Data locations =========
-# Keep big data outside the repo by setting DATA_ROOT env var, e.g.:
-#   Windows (PowerShell):  $env:DATA_ROOT="D:\fyp\transformer_data"
-#   macOS/Linux (bash):    export DATA_ROOT="/mnt/data/transformer_data"
 DATA_ROOT = os.environ.get("DATA_ROOT", os.path.join(ROOT_DIR, "data"))
 
 RAW_DIR = os.path.join(DATA_ROOT, "raw")
 PROCESSED_DIR = os.path.join(DATA_ROOT, "processed")
 IMAGES_DIR = os.path.join(RAW_DIR, "images")
-META_FILE = os.path.join(RAW_DIR, "metadata.csv")
+META_FILE = os.path.join(RAW_DIR, "annotations.xlsx")   # or metadata.csv
+
+# Train/Val/Test CSVs
+TRAIN_CSV = os.path.join(PROCESSED_DIR, "train.csv")
+VAL_CSV   = os.path.join(PROCESSED_DIR, "val.csv")
+TEST_CSV  = os.path.join(PROCESSED_DIR, "test.csv")
 
 # ========= Outputs =========
-# Similarly, you can move outputs/checkpoints elsewhere via OUTPUT_ROOT
 OUTPUT_ROOT = os.environ.get("OUTPUT_ROOT", os.path.join(ROOT_DIR, "outputs"))
 CHECKPOINT_DIR = os.path.join(OUTPUT_ROOT, "checkpoints")
 LOG_DIR        = os.path.join(OUTPUT_ROOT, "logs")
 METRICS_DIR    = os.path.join(OUTPUT_ROOT, "metrics")
 GRADCAM_DIR    = os.path.join(OUTPUT_ROOT, "gradcam")
 
-# Make sure required folders exist (only what we own)
 for d in [PROCESSED_DIR, CHECKPOINT_DIR, LOG_DIR, METRICS_DIR, GRADCAM_DIR]:
     os.makedirs(d, exist_ok=True)
 
@@ -35,13 +34,13 @@ IMAGE_SIZE = 224
 BATCH_SIZE = 32
 NUM_EPOCHS = 25
 LEARNING_RATE = 0.0005
-OPTIMIZER = "adam"           # "adam" | "adamw" | "sgd"
+OPTIMIZER = "adam"
 WEIGHT_DECAY = 0.0001
 EARLY_STOPPING_PATIENCE = 10
-SCHEDULER = "cosine"         # "cosine" | "step" | "plateau" | None
-MIXED_PRECISION = True
+SCHEDULER = "cosine"
+MIXED_PRECISION = False   # CPU ONLY → must be False
 
-MODEL_NAME = "custom_cnn"    # "custom_cnn" | "resnet18" | "resnet34" | "resnet50" | "efficientnet_b0" ...
+MODEL_NAME = "efficientnet_b0"   # Change to "efficientnet_b0" for final model
 PRETRAINED = True
 FREEZE_BACKBONE = False
 DROPOUT = 0.3
@@ -62,8 +61,6 @@ AUGMENT = {
 }
 
 # ========= Helpers / Integration =========
-# Frontend URL for CORS (FastAPI)
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
-# Convenient derived paths
 CHECKPOINT_PATH = os.path.join(CHECKPOINT_DIR, f"{MODEL_NAME}_best.pth")
