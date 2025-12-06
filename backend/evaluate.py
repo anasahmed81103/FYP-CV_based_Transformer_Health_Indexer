@@ -229,33 +229,32 @@ from models.pmt_classifier import build_pmt_classifier
 
 
 
-def evaluate_classifier(root_dir=None, batch_size=None):
-  
+def evaluate_classifier_test(root_dir=None, batch_size=None):
+
     device = get_device()
     root_dir = root_dir or cfg.CLASSIFIER_PROCESSED_DIR
     batch_size = batch_size or cfg.BATCH_SIZE
 
-    val_dir = os.path.join(root_dir, "val")
-    if not os.path.exists(val_dir):
-        raise FileNotFoundError(f"Validation folder not found: {val_dir}")
+    test_dir = os.path.join(root_dir, "test")
+    if not os.path.exists(test_dir):
+        raise FileNotFoundError(f"❌ Test folder not found: {test_dir}")
 
-    # Basic transforms (no augmentation)
-    val_t = transforms.Compose([
+    # Basic transforms
+    test_t = transforms.Compose([
         transforms.Resize((cfg.IMAGE_SIZE, cfg.IMAGE_SIZE)),
         transforms.ToTensor(),
         transforms.Normalize(mean=cfg.NORMALIZE_MEAN, std=cfg.NORMALIZE_STD)
     ])
 
-   
-    val_ds = PMTClassifierDataset(val_dir, transform=val_t)
-   
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
+    # Load dataset + dataloader
+    test_ds = PMTClassifierDataset(test_dir, transform=test_t)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
 
-    # Load classifier model
+    # Load best model
     model = build_pmt_classifier().to(device)
     ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, "pmt_classifier_best.pth")
     if not os.path.exists(ckpt_path):
-        raise FileNotFoundError(f"Classifier checkpoint not found: {ckpt_path}")
+        raise FileNotFoundError(f"❌ Classifier checkpoint not found: {ckpt_path}")
 
     state = torch.load(ckpt_path, map_location=device)
     model.load_state_dict(state["model_state"])
@@ -264,7 +263,7 @@ def evaluate_classifier(root_dir=None, batch_size=None):
     all_labels, all_preds = [], []
 
     with torch.no_grad():
-        for imgs, labels in val_loader:
+        for imgs, labels in test_loader:
             imgs, labels = imgs.to(device), labels.to(device)
             outputs = model(imgs)
             preds = torch.argmax(outputs, dim=1)
@@ -278,8 +277,11 @@ def evaluate_classifier(root_dir=None, batch_size=None):
     f1 = f1_score(all_labels, all_preds, zero_division=0)
     cm = confusion_matrix(all_labels, all_preds)
 
-    print("\n✅ Classifier Evaluation Complete")
-    print(f"Accuracy: {acc:.4f}, Precision: {prec:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
+    print("\n🧪 Test Set Evaluation Complete")
+    print(f"Accuracy:  {acc:.4f}")
+    print(f"Precision: {prec:.4f}")
+    print(f"Recall:    {rec:.4f}")
+    print(f"F1 Score:  {f1:.4f}")
     print("Confusion Matrix:\n", cm)
 
     return {
@@ -319,4 +321,4 @@ if __name__ == "__main__":
     
     
     elif args.model == "classifier":
-        evaluate_classifier()
+        evaluate_classifier_test()
