@@ -1,5 +1,5 @@
 # backend/evaluate.py
-import os, sys
+import os, sys , argparse
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
@@ -212,9 +212,111 @@ def evaluate_transformer(image_paths):
         "gradcam_paths": gradcam_paths,
     }
 
+
+#---------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+# -------------------------
+# PMT vs Non-PMT Classifier Evaluation
+# -------------------------
+from core.dataset import PMTClassifierDataset
+from torchvision import transforms
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from models.pmt_classifier import build_pmt_classifier
+
+
+
+def evaluate_classifier(root_dir=None, batch_size=None):
+  
+    device = get_device()
+    root_dir = root_dir or cfg.CLASSIFIER_PROCESSED_DIR
+    batch_size = batch_size or cfg.BATCH_SIZE
+
+    val_dir = os.path.join(root_dir, "val")
+    if not os.path.exists(val_dir):
+        raise FileNotFoundError(f"Validation folder not found: {val_dir}")
+
+    # Basic transforms (no augmentation)
+    val_t = transforms.Compose([
+        transforms.Resize((cfg.IMAGE_SIZE, cfg.IMAGE_SIZE)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=cfg.NORMALIZE_MEAN, std=cfg.NORMALIZE_STD)
+    ])
+
+   
+    val_ds = PMTClassifierDataset(val_dir, transform=val_t)
+   
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
+
+    # Load classifier model
+    model = build_pmt_classifier().to(device)
+    ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, "pmt_classifier_best.pth")
+    if not os.path.exists(ckpt_path):
+        raise FileNotFoundError(f"Classifier checkpoint not found: {ckpt_path}")
+
+    state = torch.load(ckpt_path, map_location=device)
+    model.load_state_dict(state["model_state"])
+    model.eval()
+
+    all_labels, all_preds = [], []
+
+    with torch.no_grad():
+        for imgs, labels in val_loader:
+            imgs, labels = imgs.to(device), labels.to(device)
+            outputs = model(imgs)
+            preds = torch.argmax(outputs, dim=1)
+            all_labels.extend(labels.cpu().numpy())
+            all_preds.extend(preds.cpu().numpy())
+
+    # Metrics
+    acc = accuracy_score(all_labels, all_preds)
+    prec = precision_score(all_labels, all_preds, zero_division=0)
+    rec = recall_score(all_labels, all_preds, zero_division=0)
+    f1 = f1_score(all_labels, all_preds, zero_division=0)
+    cm = confusion_matrix(all_labels, all_preds)
+
+    print("\n✅ Classifier Evaluation Complete")
+    print(f"Accuracy: {acc:.4f}, Precision: {prec:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
+    print("Confusion Matrix:\n", cm)
+
+    return {
+        "accuracy": acc,
+        "precision": prec,
+        "recall": rec,
+        "f1": f1,
+        "confusion_matrix": cm
+    }
+
+
+#------------------------------------------------------------------------------------------------------------------------
+
+
 # -------------------------
 # Entry point
 # -------------------------
+
+
 if __name__ == "__main__":
-    ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, f"{cfg.MODEL_NAME}_best.pth")
-    evaluate_test(ckpt_path)
+
+    # pass the command line arg like:  python backend/evaluate.py --model regression  or  python backend/evaluate.py --model classifier
+   # to select evaluation of the model 
+
+
+    parser = argparse.ArgumentParser(description="Evaluate Transformer or Classifier model")
+    parser.add_argument(
+        "--model", type=str, default="regression",
+        choices=["regression", "classifier"],
+        help="Specify which model to evaluate: 'regression' or 'classifier'"
+    )
+    args = parser.parse_args()
+
+    if args.model == "regression":
+        ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, f"{cfg.MODEL_NAME}_best.pth")
+        evaluate_test(ckpt_path)
+    
+    
+    elif args.model == "classifier":
+        evaluate_classifier()
