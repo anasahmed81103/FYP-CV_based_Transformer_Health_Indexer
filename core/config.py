@@ -141,9 +141,6 @@ elif TARGET_MODEL == "classifier":
         "random_erasing": False,
     }
 
-
-
-
 # ========= Helpers / Integration =========
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 

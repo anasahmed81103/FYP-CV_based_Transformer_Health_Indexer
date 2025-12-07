@@ -76,17 +76,23 @@ def overlay_cam(image, cam):
 # Generate Grad-CAM
 # ============================================================
 
-def generate_gradcam_for_image(model, image_path, save_path, param_index=0):
+def generate_gradcam_for_image(model, image_path, save_path, param_index=0, input_tensor=None):
     device = get_device()
-    model.to(device).eval()
+    model.to(device).eval() 
 
     original = Image.open(image_path).convert("RGB")
-    transform = T.Compose([
-        T.Resize((cfg.IMAGE_SIZE, cfg.IMAGE_SIZE)),
-        T.ToTensor(),
-        T.Normalize(cfg.NORMALIZE_MEAN, cfg.NORMALIZE_STD),
-    ])
-    x = transform(original).unsqueeze(0).to(device)
+    
+    # Use the passed input tensor if available
+    if input_tensor is not None:
+        x = input_tensor
+    else:
+        # Revert to old path if called directly (not recommended)
+        transform = T.Compose([
+            T.Resize((cfg.IMAGE_SIZE, cfg.IMAGE_SIZE)),
+            T.ToTensor(),
+            T.Normalize(cfg.NORMALIZE_MEAN, cfg.NORMALIZE_STD),
+        ])
+        x = transform(original).unsqueeze(0).to(device)
 
     target_layer = get_target_layer(model)
     gradcam = GradCAM(model, target_layer)

@@ -156,68 +156,177 @@ def evaluate_test(ckpt_path: str = cfg.CHECKPOINT_PATH):
 # -------------------------
 # Single / small-batch inference + GradCAM
 # -------------------------
+# -------------------------
+# PMT Classifier Loader
+# -------------------------
+from models.pmt_classifier import build_pmt_classifier
+
+def load_pmt_model():
+    device = get_device()
+    ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, "pmt_classifier_best.pth")
+    
+    if not os.path.exists(ckpt_path):
+         # If exact name not found, try user provided path logic or warn
+         # Assuming user followed instructions and placed it there
+         raise FileNotFoundError(f"PMT Checkpoint not found: {ckpt_path}")
+
+    model = build_pmt_classifier().to(device)
+    state = torch.load(ckpt_path, map_location=device)
+    
+    # helper to load state dict safely
+    if "model_state" in state:
+        model.load_state_dict(state["model_state"])
+    else:
+        model.load_state_dict(state)
+        
+    model.eval()
+    return model
+
+# -------------------------
+# Single / small-batch inference + GradCAM (FIXED VERSION)
+# -------------------------
 def evaluate_transformer(image_paths):
     device = get_device()
-    ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, f"{cfg.MODEL_NAME}_best.pth")
-    model = load_model(ckpt_path).to(device)
-    model.eval()
+    
+    # 1. Load Health Model
+    health_ckpt = os.path.join(cfg.CHECKPOINT_DIR, f"{cfg.MODEL_NAME}_best.pth")
+    try:
+        health_model = load_model(health_ckpt).to(device)
+    except FileNotFoundError as e:
+        print(f"FATAL ERROR: Health Model Checkpoint not found at {health_ckpt}. Cannot run analysis.")
+        return {
+            "predictions": [],
+            "healthIndex": 0.0,
+            "paramsScores": {},
+            "gradCamImages": [],
+        }
 
+    health_model.eval()
+
+    # 2. Load PMT Classifier
+    pmt_model = None
+    try:
+        pmt_model = load_pmt_model()
+        print("✅ PMT Classifier loaded for image filtering.")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load PMT model: {e}. All images will be processed.")
+
+    # Transforms
     _, _, test_t = build_transforms(
         image_size=cfg.IMAGE_SIZE,
         mean=cfg.NORMALIZE_MEAN,
         std=cfg.NORMALIZE_STD,
-        augment_cfg={}  # no augmentation
+        augment_cfg={}
     )
 
+    # Ensure GradCAM directory exists
     os.makedirs(cfg.GRADCAM_DIR, exist_ok=True)
 
     all_preds = []
-    gradcam_paths = []
+    gradcam_urls = [] 
+    valid_scores_list = [] 
 
+    # We need torch.set_grad_enabled(True) for GradCAM
     with torch.no_grad():
         for idx, img_path in enumerate(image_paths):
-            img = Image.open(img_path).convert("RGB")
-            img_t = test_t(img).unsqueeze(0).to(device)   # [1,3,H,W]
+            try:
+                img = Image.open(img_path).convert("RGB")
+                img_t = test_t(img).unsqueeze(0).to(device)  # [1,3,H,W]
+            except Exception as e:
+                print(f"❌ Failed to load or transform image {img_path}: {e}")
+                all_preds.append({"status": "error", "image": os.path.basename(img_path)})
+                continue
 
-            out = model(img_t)                            # [1,13]
-            out = out.squeeze(0).cpu().numpy()            # [13]
+            # --- Step 1: PMT Check ---
+            is_pmt = True
+            if pmt_model:
+                pmt_out = pmt_model(img_t)
+                pmt_pred = torch.argmax(pmt_out, dim=1).item()
+                if pmt_pred == 0:  # 0=Non-PMT
+                    is_pmt = False
+            
+            if not is_pmt:
+                print(f"⏩ Image {os.path.basename(img_path)} classified as Non-PMT. Skipping.")
+                all_preds.append({"status": "non-pmt", "image": os.path.basename(img_path)})
+                continue
 
-            # ensure values are reasonable (clamp to 0-6)
+            # --- Step 2: Health Analysis ---
+            out = health_model(img_t)                      # [1,13]
+            out = out.squeeze(0).cpu().numpy()             # [13]
             out_clamped = np.clip(out, 0.0, 6.0)
-
-            # compute overall sum (same logic as dataset's overall)
             overall_sum = float(out_clamped.sum())
 
-            # save per-parameter predictions
             preds_dict = {PARAM_COLUMNS[i]: float(out_clamped[i]) for i in range(len(PARAM_COLUMNS))}
             preds_dict["overall_sum"] = overall_sum
+            preds_dict["status"] = "processed"
+            
             all_preds.append(preds_dict)
+            valid_scores_list.append(preds_dict)
 
-            # Grad-CAM (writes file)
-            gradcam_file = os.path.join(cfg.GRADCAM_DIR, f"gradcam_{idx}.jpg")
+            # --- Step 3: Grad-CAM Generation ---
+            
+            # Find the index of the parameter with the highest defect score
+            max_idx = int(np.argmax(out))
+            
+            base_name = os.path.basename(img_path)
+            gradcam_filename = f"gradcam_{base_name}"
+            gradcam_file_abs = os.path.join(cfg.GRADCAM_DIR, gradcam_filename)
+            
             try:
-                generate_gradcam_for_image(model, img_path, gradcam_file)
-                gradcam_paths.append(gradcam_file)
+                # 1. Temporarily enable gradients just for the GradCAM calculation
+                with torch.enable_grad():
+                    
+                    # 2. Get the model ready for a gradient pass
+                    health_model.train() # Set to train mode for backward hook registration
+                    
+                    # 3. Create a fresh, gradient-tracked input tensor
+                    img_grad_t = test_t(img).unsqueeze(0).to(device).requires_grad_(True)
+                    
+                    # 4. Generate GradCAM using the original image path and the new tensor
+                    generate_gradcam_for_image(
+                        health_model, 
+                        img_path, 
+                        gradcam_file_abs, 
+                        param_index=max_idx,
+                        input_tensor=img_grad_t # Pass the gradient-tracked tensor
+                    )
+                    
+                    # 5. Return model to evaluation mode
+                    health_model.eval()
+                
+                # Frontend URL path: e.g., "outputs/gradcam/gradcam_image.jpg"
+                gradcam_urls.append(f"outputs/gradcam/{gradcam_filename}")
+                print(f"✅ GradCAM generated for {base_name} at index {max_idx}.")
             except Exception as e:
-                # don't crash the whole loop for GradCAM failures
-                gradcam_paths.append(None)
-                print(f"⚠ GradCAM failed for {img_path}: {e}")
+                print(f"⚠️ GradCAM failed for {img_path}: {e}")
+                import traceback
+                traceback.print_exc()
+                health_model.eval() # Ensure model is in eval mode even after failure
+                pass
 
-    # average overall health across supplied images
-    avg_overall = float(np.mean([p["overall_sum"] for p in all_preds])) if all_preds else None
-
+    # Aggregate results for frontend
+    if valid_scores_list:
+        # Average the overall health index
+        avg_health_index = float(np.mean([p["overall_sum"] for p in valid_scores_list]))
+        
+        # Average per-parameter scores
+        aggregated_params = {}
+        for col in PARAM_COLUMNS:
+            vals = [p[col] for p in valid_scores_list]
+            aggregated_params[col] = float(np.mean(vals))
+            
+    else:
+        avg_health_index = 0.0
+        aggregated_params = {} 
+            
+    print(f"DEBUG: Returning {len(gradcam_urls)} GradCAM images. Health Index: {avg_health_index}")
+    
     return {
         "predictions": all_preds,
-        "avg_overall_sum": avg_overall,
-        "gradcam_paths": gradcam_paths,
+        "healthIndex": avg_health_index,
+        "paramsScores": aggregated_params,
+        "gradCamImages": gradcam_urls,
     }
-
-
-#---------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
 
 # -------------------------
 # PMT vs Non-PMT Classifier Evaluation
@@ -226,8 +335,6 @@ from core.dataset import PMTClassifierDataset
 from torchvision import transforms
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from models.pmt_classifier import build_pmt_classifier
-
-
 
 def evaluate_classifier_test(root_dir=None, batch_size=None):
 
