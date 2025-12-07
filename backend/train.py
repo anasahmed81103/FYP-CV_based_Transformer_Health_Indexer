@@ -172,11 +172,7 @@ def evaluate_regression(model, loader, criterion, device):
 
     return avg_loss, mae
 
-
-
-
 # classifier model evaluation 
-
 
 def evaluate_classifier(model, loader, criterion, device):
     model.eval()
