@@ -13,7 +13,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
-  LatLng _currentCenter = const LatLng(51.509364, -0.128928); // Default London
+  final LatLng _currentCenter = const LatLng(51.509364, -0.128928); // Default London
   LatLng? _selectedPosition;
 
   void _handleTap(TapPosition tapPosition, LatLng point) {

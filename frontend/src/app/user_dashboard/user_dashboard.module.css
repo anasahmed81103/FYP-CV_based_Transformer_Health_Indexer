@@ -404,7 +404,13 @@
     font-size: 1.5rem;
     font-weight: 600;
     color: #ffffff;
-    margin: 0 0 1.5rem 0;
+    margin: 0 0 0.5rem 0;
+}
+
+.gradcamSubheading {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
 }
 
 .gradcamGrid {
@@ -436,6 +442,7 @@
 }
 
 /* --- Health Index --- */
+
 .overallHealth {
     margin: 2.5rem 0;
 }
@@ -463,29 +470,29 @@
     transition: width 0.8s ease;
 }
 
-.healthBar.low {
-    background: linear-gradient(90deg, #ef4444, #dc2626);
-}
-
-.healthBar.medium {
-    background: linear-gradient(90deg, #facc15, #eab308);
-}
-
-.healthBar.high {
-    background: linear-gradient(90deg, #22c55e, #16a34a);
-}
-
+/* UPDATED HEALTH VALUE DISPLAY */
 .healthValue {
     text-align: center;
     margin-top: 1rem;
     font-weight: 700;
-    font-size: 1.5rem;
+    font-size: 2.2rem;
+    /* Larger for percentage */
     color: #ffffff;
 }
 
-/* --- Parameters --- */
+.defectValue {
+    font-weight: 400;
+    font-size: 0.95rem;
+    /* Smaller, secondary display for defect sum */
+    color: #a0a0a0;
+    margin-left: 0.75rem;
+    display: block;
+    /* Ensures it drops to the next line on mobile */
+}
+
+/* --- Parameters - Updated to a Grid Layout --- */
 .parameters {
-    text-align: center;
+    text-align: left;
     margin-top: 2.5rem;
 }
 
@@ -494,6 +501,7 @@
     font-weight: 600;
     color: #ffffff;
     margin: 0 0 1.5rem 0;
+    text-align: center;
 }
 
 .parameters ul {
@@ -502,45 +510,86 @@
     margin: 0;
 }
 
-.parameters li {
-    margin-bottom: 1rem;
+/* Header for the Parameter Grid */
+.paramGridHeader {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    /* Component | Score | Action */
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+    color: #2dd4bf;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.paramItem {
+    margin-bottom: 0.5rem;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 12px;
     padding: 1rem 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.2s ease;
+}
+
+.paramItem:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.paramDetailRow {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    /* Component | Score Block | Action */
+    align-items: center;
+    gap: 1rem;
+}
+
+.paramName {
+    font-weight: 500;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.paramScoreBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.scoreValue {
+    color: #fff;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
 }
 
 .paramBarContainer {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 0.5rem;
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 .paramBar {
-    flex: 1;
-    height: 10px;
+    height: 100%;
     border-radius: 10px;
     transition: width 0.6s ease;
 }
 
-.paramBar.low {
-    background: linear-gradient(90deg, #ef4444, #dc2626);
-}
-
-.paramBar.medium {
-    background: linear-gradient(90deg, #facc15, #eab308);
-}
-
-.paramBar.high {
-    background: linear-gradient(90deg, #22c55e, #16a34a);
-}
-
-.paramBarContainer strong {
-    color: #ffffff;
+.requiredAction {
     font-weight: 600;
-    min-width: 60px;
-    text-align: right;
+    color: #f97316;
+    /* Orange for action visibility */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.actionIcon {
+    color: #2dd4bf;
+    /* Teal icon */
 }
 
 /* --- Location Popup --- */
@@ -637,8 +686,40 @@
     padding: 3rem 0;
 }
 
+.warningBox {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.warningBox p {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+}
+
+.warningBox ul {
+    padding-left: 1.5rem;
+    margin: 0;
+}
+
+.warningBox li {
+    font-size: 0.95rem;
+}
+
+/* --- GradCAM Image styles (No Change) --- */
+.gradcamImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* Ensure the whole heatmap is visible */
+}
+
 /* ========================================
-   MOBILE RESPONSIVE STYLES
+   MOBILE RESPONSIVE STYLES (Adjusted Parameter Grid)
    ======================================== */
 
 @media (max-width: 768px) {
@@ -646,7 +727,7 @@
         padding: 1rem;
     }
 
-    /* Fix Admin/History buttons for mobile */
+    /* Floating action buttons */
     .adminButtons {
         position: fixed;
         bottom: 1rem;
@@ -689,6 +770,37 @@
     .gradcamBox {
         width: 100%;
         max-width: 300px;
+    }
+
+    /* Parameter Table Mobile Adjustments */
+    .paramGridHeader {
+        display: none;
+        /* Hide header on small screens */
+    }
+
+    .paramDetailRow {
+        grid-template-columns: 1fr;
+        /* Stack elements */
+        gap: 0.5rem;
+    }
+
+    .paramScoreBlock {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .paramName {
+        font-size: 1.1rem;
+    }
+
+    .requiredAction {
+        justify-content: flex-start;
+        font-size: 0.9rem;
+    }
+
+    .defectValue {
+        margin-left: 0;
     }
 }
 
