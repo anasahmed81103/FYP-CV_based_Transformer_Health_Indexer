@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
+import '../models/analysis_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
@@ -13,9 +14,9 @@ class ApiService {
   // Web: localhost
   static String get baseUrl {
     if (kIsWeb) {
-      return dotenv.env['API_URL_WEB'] ?? 'http://localhost:3000/api';
+      return dotenv.env['API_URL_WEB'] ?? 'http://localhost:8000';
     }
-    return dotenv.env['API_URL_ANDROID'] ?? 'http://10.0.2.2:3000/api';
+    return dotenv.env['API_URL_ANDROID'] ?? 'http://10.0.2.2:8000';
   }
 
   static String get imageBaseUrl {
@@ -207,9 +208,12 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> analyze(String transformerId,
-      String location, String date, String time, List<XFile> images) async {
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/analyze'));
+  static Future<AnalysisResult> analyze(String transformerId, String location,
+      String date, String time, List<XFile> images) async {
+    // Endpoint is /predict
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/predict'));
+
+    // ... (rest of the headers logic)
 
     // Add headers manually for MultipartRequest
     if (_authToken != null) {
@@ -255,7 +259,8 @@ class ApiService {
       }
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        return AnalysisResult.fromJson(jsonResponse);
       } else if (response.statusCode == 401) {
         throw Exception('Unauthorized - Please log in again');
       } else {

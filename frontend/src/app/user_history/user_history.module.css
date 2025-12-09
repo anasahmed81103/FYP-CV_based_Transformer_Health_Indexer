@@ -341,3 +341,124 @@
     padding: 0.75rem;
   }
 }
+
+/* --- NEW: Compact Layout Styles --- */
+
+/* Location cell - truncate long addresses */
+.locationCell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.locationCell:hover {
+  white-space: normal;
+  overflow: visible;
+}
+
+/* Health Index cell - emphasize the value */
+.healthCell {
+  font-size: 1.1rem;
+  color: #f97316;
+  text-align: center;
+}
+
+/* Image thumbnail container */
+.imageThumbContainer {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.imageThumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(249, 115, 22, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.imageThumb:hover {
+  transform: scale(1.8);
+  z-index: 100;
+  border-color: #f97316;
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.5);
+}
+
+/* Collapsible parameters */
+.paramsDetails {
+  cursor: pointer;
+}
+
+.paramsSummary {
+  padding: 0.5rem 1rem;
+  background: rgba(45, 212, 191, 0.1);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  border-radius: 8px;
+  color: #2dd4bf;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  list-style: none;
+  text-align: center;
+}
+
+.paramsSummary:hover {
+  background: rgba(45, 212, 191, 0.2);
+  border-color: #2dd4bf;
+}
+
+.paramsDetails[open] .paramsSummary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.paramsDropdown {
+  position: absolute;
+  z-index: 50;
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 1rem;
+  margin-top: -1px;
+  min-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.paramsDropdown .paramRow {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.paramsDropdown .paramRow:last-child {
+  border-bottom: none;
+}
+
+.paramsDropdown .paramName {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.paramsDropdown .paramScore {
+  color: #2dd4bf;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* No data indicator */
+.noData {
+  color: #666;
+  font-style: italic;
+}
