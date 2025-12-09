@@ -174,15 +174,19 @@
 }
 
 /* --- DateTime Container --- */
+/* --- DateTime Container --- */
 .datetimeContainer {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.5rem;
 }
 
 .datetimeContainer .inputGroup {
-    min-width: 0;
+    flex: 1;
+    min-width: 200px;
 }
+
+
 
 /* --- Location Row --- */
 .locationRow {

@@ -28,8 +28,13 @@ export async function POST(req: Request) {
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const secret = process.env.JWT_SECRET!;
-  const decoded = jwt.verify(token, secret) as { id: number; role: string };
-  const userId = decoded.id;
+  let userId: number;
+  try {
+    const decoded = jwt.verify(token, secret) as { id: number; role: string };
+    userId = decoded.id;
+  } catch (e) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
 
   // --- Extract transformer info ---
   const transformerId = formData.get("transformer_id") as string;
@@ -49,16 +54,20 @@ export async function POST(req: Request) {
 
     const analysisData = await res.json();
 
-    // --- Health Index & Status ---
-    const healthIndex = analysisData.healthIndex || 0;
-    const status =
-      healthIndex > 80 ? "Healthy" : healthIndex > 60 ? "Moderate" : "Critical";
+    // --- Health Index & Status Calculation ---
+    // Backend returns RAW DEFECT SUM (0-78): Higher score = More defects = Worse health
+    // We convert to HEALTH PERCENTAGE (0-100): Higher percentage = Better health
+    const rawDefectSum = analysisData.healthIndex || 0;
+    const healthPercentage = Math.max(0, 100 - (rawDefectSum / 78.0) * 100);
+
+    // Determine status based on health percentage
+    let status: 'Healthy' | 'Moderate' | 'Critical' = 'Critical';
+    if (healthPercentage > 80) status = 'Healthy';
+    else if (healthPercentage > 40) status = 'Moderate';
 
     // --- Prepare parameters for logging ---
-    const paramsScores: Record<string, number> = {};
-    (analysisData.allParameters || []).forEach((p: { name: string; score: number }) => {
-      paramsScores[p.name] = p.score;
-    });
+    // The Python backend returns 'paramsScores' as a dictionary: { "Rust": 4.0, ... }
+    const paramsScores = analysisData.paramsScores || {};
 
     // --- Save log to database ---
     await db.insert(analysisLogs).values({
@@ -67,19 +76,15 @@ export async function POST(req: Request) {
       location,
       inferenceDate: date,
       inferenceTime: time,
-      healthIndexScore: healthIndex,
-      paramsScores,
-      providedImages: analysisData.providedImages || null,
-      gradCamImages: analysisData.gradcamImages || null,
-      status,
+      healthIndexScore: parseFloat(Number(rawDefectSum).toFixed(2)), // Store RAW DEFECT SUM (0-78) to match dashboard display
+      paramsScores, // JSONB field
+      providedImages: analysisData.providedImages || [],
+      gradCamImages: analysisData.gradCamImages || [],
+      status: status,
     });
 
     // --- Return full results to frontend ---
-    return NextResponse.json({
-      healthIndex,
-      allParameters: analysisData.allParameters || [], // all 13 parameters
-      gradcamImages: analysisData.gradcamImages || [],
-    });
+    return NextResponse.json(analysisData);
   } catch (error) {
     console.error("Error in /api/analyze:", error);
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });

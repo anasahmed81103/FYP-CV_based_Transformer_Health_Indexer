@@ -46,8 +46,8 @@ export async function GET(req: Request) {
 
         const decoded = jwt.verify(token, secret) as TokenPayload;
 
-        // Return the role and email from the verified token.
-        return NextResponse.json({ role: decoded.role, email: decoded.email }, { status: 200 });
+        // Return the role, email and id from the verified token.
+        return NextResponse.json({ role: decoded.role, email: decoded.email, id: decoded.id }, { status: 200 });
 
     } catch (err) {
         // This catch block handles failed JWT verification (e.g., expired or invalid token).

@@ -9,7 +9,8 @@ import {
     // ALL required types consolidated here for both tables:
     jsonb,
     doublePrecision,
-    varchar
+    varchar,
+    integer
 } from "drizzle-orm/pg-core";
 
 // Define allowed roles (enum)
@@ -48,7 +49,7 @@ export const analysisLogs = pgTable("analysis_logs", {
     id: serial("id").primaryKey(),
 
     // Foreign key to link analysis to the user who performed it
-    userId: serial("user_id").references(() => users.id).notNull(),
+    userId: integer("user_id").references(() => users.id).notNull(),
 
     // Form data fields
     transformerId: varchar("transformer_id", { length: 50 }).notNull(),

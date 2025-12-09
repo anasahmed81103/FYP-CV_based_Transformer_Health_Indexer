@@ -1,4 +1,4 @@
-// app/admin/page.tsx - FINAL COMPLETE VERSION (Fetching Logic Refined)
+// app/admin/page.tsx - FINAL COMPLETE VERSION (With History Navigation Logic)
 
 "use client";
 
@@ -55,10 +55,12 @@ const UserRow: React.FC<UserRowProps> = ({ user, onToggleStatus, onToggleRole, o
       >
         {user.role === "Admin" ? <User size={16} /> : <Shield size={16} />}
       </button>
+      {/* BUTTON TO VIEW SPECIFIC USER HISTORY */}
       <button
         onClick={() => onViewHistory(user.id)}
-        className={`${styles.btn} ${styles.btnIcon}`}
+        className={`${styles.btn} ${styles.btnIcon} ${styles.btnHistory}`}
         title="View User History"
+        style={{ color: '#2563eb' }}
       >
         <History size={16} />
       </button>
@@ -73,6 +75,7 @@ export default function AdminPage() {
 
   // --- HOOKS FOR AUTHORIZATION ---
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null); // Added for Master Admin check
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // --- HOOKS FOR DYNAMIC DATA (MOVED UP) ---
@@ -82,24 +85,22 @@ export default function AdminPage() {
   const [newAdminEmail, setNewAdminEmail] = useState<string>("");
 
   const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
-  const userName = "Master Admin";
+  const userName = "Master Admin"; // Placeholder, could be fetched later
 
   // Function to fetch the user list
   const fetchUserList = async () => {
     setIsDataLoading(true);
     setFetchError(null);
     try {
-      // NOTE: This calls the new dynamic endpoint to get all users
       const res = await fetch("/api/admin/users");
 
       if (!res.ok) {
-        // If the server returns an HTTP error (404, 500), throw an error.
-        // Use res.text() instead of res.json() to read the HTML body.
         const errorBody = await res.text();
         console.error("API Fetch Error Body:", errorBody);
         throw new Error(`Failed to fetch user data. Server responded with status ${res.status}.`);
       }
 
+      // NOTE: Assume backend returns UserData[]
       const data: UserData[] = await res.json();
 
       if (Array.isArray(data)) {
@@ -126,6 +127,7 @@ export default function AdminPage() {
         const email: string | null = data.email;
 
         setCurrentUserRole(role);
+        setCurrentUserEmail(email); // Save email
 
         // Authorization check: Must be admin role OR Master Admin email
         const canAccess = role === "admin" || email === MASTER_ADMIN_EMAIL;
@@ -144,7 +146,7 @@ export default function AdminPage() {
       }
     };
     checkAuth();
-  }, [router]); // fetchUserList is excluded from dependency array as it's stable and called only once initially
+  }, [router]);
 
 
   // --- Access Denied / Loading Handlers ---
@@ -164,11 +166,11 @@ export default function AdminPage() {
 
   // --- HANDLER FUNCTIONS (MODIFIED TO CALL API) ---
   const handleToggleRole = async (userId: number) => {
+    // ... (logic remains the same)
     const userToUpdate = users.find(user => user.id === userId);
     if (!userToUpdate) return;
 
-    // Determine the target role based on the current state and database logic
-    const currentRole = userToUpdate.role.toLowerCase(); // 'admin' or 'user'
+    const currentRole = userToUpdate.role.toLowerCase();
     const targetRole = currentRole === 'admin' ? 'user' : 'admin';
 
     try {
@@ -183,7 +185,6 @@ export default function AdminPage() {
         throw new Error(errorData.error || `Failed to update role. Status: ${res.status}`);
       }
 
-      // SUCCESS: Refresh the entire user list to reflect the DB change
       await fetchUserList();
 
     } catch (error) {
@@ -193,6 +194,7 @@ export default function AdminPage() {
   };
 
   const handleToggleStatus = async (userId: number) => {
+    // ... (logic remains the same)
     const userToUpdate = users.find(user => user.id === userId);
     if (!userToUpdate) return;
 
@@ -211,7 +213,6 @@ export default function AdminPage() {
         throw new Error(errorData.error || `Failed to update status. Status: ${res.status}`);
       }
 
-      // SUCCESS: Refresh the entire user list to reflect the DB change
       await fetchUserList();
 
     } catch (error) {
@@ -221,8 +222,14 @@ export default function AdminPage() {
   };
 
 
+  // MODIFIED: Navigate to history page with userId query parameter
   const handleViewHistory = (userId: number) => {
-    alert(`Viewing history for user ID: ${userId}`);
+    router.push(`/user_history?userId=${userId}`);
+  };
+
+  // NEW: Navigate to history page with scope=all query parameter
+  const handleViewAllHistory = () => {
+    router.push(`/user_history?scope=all`);
   };
 
   const handleAddAdmin = (e: FormEvent<HTMLFormElement>) => {
@@ -235,6 +242,8 @@ export default function AdminPage() {
     setNewAdminEmail("");
   };
 
+  const isMasterAdmin = currentUserEmail === MASTER_ADMIN_EMAIL;
+
   // --- FINAL RENDER ---
   return (
     <div className={styles.adminContainer}>
@@ -242,12 +251,26 @@ export default function AdminPage() {
         <header className={styles.headerRow}>
           <div>
             <h1 className={styles.title}>Admin Portal</h1>
-            <p className={styles.subtitle}>Welcome, {userName}.</p>
+            <p className={styles.subtitle}>Welcome, {isMasterAdmin ? userName : 'Admin'}.</p>
           </div>
-          <button onClick={handleLogout} className={styles.btn} title="Logout" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            {/* Show "View All History" button only for Master Admin or general Admin (if allowed by your role logic) */}
+            {currentUserRole === 'admin' && (
+              <button
+                onClick={handleViewAllHistory}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                title="View All User History Records"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#3b82f6', color: 'white', border: 'none' }}
+              >
+                <History size={18} />
+                <span>View All History</span>
+              </button>
+            )}
+            <button onClick={handleLogout} className={styles.btn} title="Logout" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
         </header>
 
         <main className={styles.grid}>
@@ -282,7 +305,7 @@ export default function AdminPage() {
             )}
           </div>
 
-          {/* Master Admin Card */}
+          {/* Master Admin Card (Unchanged) */}
           <div className={`${styles.card} ${styles.masterAdminCard}`}>
             <div className={styles.cardHeader}>
               <div className={styles.masterAdminTitleWrapper}>
