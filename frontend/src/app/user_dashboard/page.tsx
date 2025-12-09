@@ -220,7 +220,9 @@ export default function UserDashboard() {
 
     try {
       // *** FIX: Changed API path from /api/analyze to the full FastAPI endpoint path ***
-      const res = await fetch('http://127.0.0.1:8000/predict', { method: 'POST', body: formData });
+      // REVERTED FIX: Now pointing to /api/analyze so that the Next.js server can LOG the history to the database.
+      // The Next.js API route will proxy the request to the Python backend.
+      const res = await fetch('/api/analyze', { method: 'POST', body: formData });
 
       if (!res.ok) throw new Error('Analysis failed.');
       const data = await res.json();
