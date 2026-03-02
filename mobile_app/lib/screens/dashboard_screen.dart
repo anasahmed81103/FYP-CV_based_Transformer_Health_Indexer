@@ -1,4 +1,8 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import '../services/api_service.dart';
 import '../models/analysis_result.dart';
 import 'map_screen.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,15 +24,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final _locationController = TextEditingController();
   final _dateController = TextEditingController();
   final _timeController = TextEditingController();
+  final _feedbackController = TextEditingController();
 
   final List<XFile> _images = [];
   bool _isAnalyzing = false;
+  bool _showFeedback = false;
+  bool _isRecording = false;
+  late stt.SpeechToText _speech;
   AnalysisResult? _analysisResult;
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
+    _speech = stt.SpeechToText();
     // Set default date/time
     final now = DateTime.now();
     _dateController.text = DateFormat('yyyy-MM-dd').format(now);
@@ -57,9 +67,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     Position position = await Geolocator.getCurrentPosition();
+
+    // Attempt Reverse Geocoding via Nominatim
+    try {
+      final response = await http.get(Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.latitude}&lon=${position.longitude}'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['display_name'] != null) {
+          setState(() {
+            _locationController.text = data['display_name'];
+          });
+          return; // Exit early if successful
+        }
+      }
+    } catch (e) {
+      debugPrint('Nominatim API error: $e');
+    }
+
+    // Fallback to coordinates
     setState(() {
       _locationController.text = '${position.latitude}, ${position.longitude}';
     });
+  }
+
+  void _startListening() async {
+    if (!_isRecording) {
+      bool available = await _speech.initialize(
+        onStatus: (val) {
+          if (val == 'done') {
+            setState(() => _isRecording = false);
+          }
+        },
+        onError: (val) {
+          setState(() => _isRecording = false);
+          debugPrint('Speech Error: $val');
+        },
+      );
+      if (available) {
+        setState(() => _isRecording = true);
+        _speech.listen(
+          onResult: (val) {
+            setState(() {
+              _feedbackController.text = val.recognizedWords;
+            });
+          },
+        );
+      }
+    } else {
+      setState(() => _isRecording = false);
+      _speech.stop();
+    }
   }
 
   Future<void> _pickImages() async {
@@ -91,6 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _dateController.text,
         _timeController.text,
         _images,
+        feedback: _feedbackController.text,
       );
 
       setState(() {
@@ -266,20 +325,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ..._images.asMap().entries.map((entry) {
                   return Stack(
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _images.removeAt(entry.key);
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
+                      Container(
+                        width: 100,
+                        height: 100,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.3)),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: kIsWeb
+                              ? Image.network(entry.value.path,
+                                  fit: BoxFit.cover)
+                              : Image.file(File(entry.value.path),
+                                  fit: BoxFit.cover),
+                        ),
+                      ),
+                      Positioned(
+                        right: 16,
+                        top: 4,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _images.removeAt(entry.key);
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close,
+                                size: 12, color: Colors.white),
                           ),
-                          child: const Icon(Icons.close,
-                              size: 12, color: Colors.white),
                         ),
                       ),
                     ],
@@ -288,6 +369,100 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+
+          // Feedback Section
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showFeedback = !_showFeedback;
+                  });
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _showFeedback ? Icons.close : Icons.chat,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showFeedback = !_showFeedback;
+                  });
+                },
+                child: Text(
+                  _showFeedback
+                      ? 'Hide Analysis Notes'
+                      : 'Add Analysis Notes (Optional)',
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+
+          if (_showFeedback) ...[
+            const SizedBox(height: 12),
+            Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.only(right: 50),
+                  child: TextField(
+                    controller: _feedbackController,
+                    maxLines: 4,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText:
+                          'Enter any manual observations, maintenance notes, or specific conditions...',
+                      hintStyle:
+                          const TextStyle(color: Colors.grey, fontSize: 13),
+                      filled: true,
+                      fillColor: const Color(0xFF0F172A),
+                      contentPadding: const EdgeInsets.all(16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 1),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: IconButton(
+                    onPressed: _startListening,
+                    icon: Icon(
+                      _isRecording ? Icons.mic : Icons.mic_none,
+                      color: _isRecording ? Colors.red : Colors.grey,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: _isRecording
+                          ? Colors.red.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
 
           SizedBox(
