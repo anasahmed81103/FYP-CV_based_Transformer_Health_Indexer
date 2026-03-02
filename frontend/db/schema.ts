@@ -63,6 +63,9 @@ export const analysisLogs = pgTable("analysis_logs", {
     inferenceDate: text("inference_date").notNull(),
     inferenceTime: text("inference_time").notNull(),
 
+    // User Feedback
+    feedback: text("feedback"),
+
     // Analysis results
     healthIndexScore: doublePrecision("health_index_score").notNull(),
 

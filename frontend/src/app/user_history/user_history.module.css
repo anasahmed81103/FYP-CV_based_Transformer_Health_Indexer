@@ -457,6 +457,22 @@
   font-size: 0.9rem;
 }
 
+@media (max-width: 768px) {
+  .paramsDropdown {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 350px;
+    min-width: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(45, 212, 191, 0.5);
+    box-shadow: 0 0 100vh rgba(0, 0, 0, 0.8);
+    /* Dim background */
+  }
+}
+
 /* No data indicator */
 .noData {
   color: #666;

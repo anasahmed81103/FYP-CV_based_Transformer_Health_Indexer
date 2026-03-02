@@ -21,6 +21,7 @@ interface HistoryLog {
     providedImages?: string[];
     gradCamImages?: string[];
     status: 'Healthy' | 'Moderate' | 'Critical';
+    feedback?: string;
 }
 
 export default function HistoryPage() {
@@ -251,6 +252,7 @@ export default function HistoryPage() {
                                 <th>Input Images</th>
                                 <th>Grad-CAM</th>
                                 <th>Parameters</th>
+                                <th>Feedback</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -340,6 +342,13 @@ export default function HistoryPage() {
                                                 ))}
                                             </div>
                                         </details>
+                                    </td>
+                                    <td className={styles.feedbackCell} style={{ maxWidth: '200px', whiteSpace: 'pre-wrap' }}>
+                                        {log.feedback ? (
+                                            <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                                                {log.feedback}
+                                            </div>
+                                        ) : <span className={styles.noData}>—</span>}
                                     </td>
                                 </tr>
                             ))}

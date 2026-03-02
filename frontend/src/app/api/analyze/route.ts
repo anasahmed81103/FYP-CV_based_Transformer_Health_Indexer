@@ -41,6 +41,7 @@ export async function POST(req: Request) {
   const location = formData.get("location") as string;
   const date = formData.get("date") as string;
   const time = formData.get("time") as string;
+  const feedback = formData.get("feedback") as string || null;
 
   const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
       location,
       inferenceDate: date,
       inferenceTime: time,
+      feedback: feedback,
       healthIndexScore: parseFloat(Number(rawDefectSum).toFixed(2)), // Store RAW DEFECT SUM (0-78) to match dashboard display
       paramsScores, // JSONB field
       providedImages: analysisData.providedImages || [],
