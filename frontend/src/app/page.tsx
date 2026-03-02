@@ -46,6 +46,9 @@ export default function Home() {
               <Link href="/login" className={styles.btnSecondary}>
                 Sign In
               </Link>
+              <Link href="/about" className={styles.btnSecondary}>
+                How It Works
+              </Link>
             </div>
           </div>
 

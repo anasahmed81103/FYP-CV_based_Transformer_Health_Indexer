@@ -567,7 +567,8 @@ export default function UserDashboard() {
               <div className={styles.gradcamGrid}>
                 {analysisResult.gradcamImages.length ? (
                   analysisResult.gradcamImages.map((imgUrl, i) => {
-                    const fullUrl = imgUrl.startsWith('http') ? imgUrl : `http://127.0.0.1:8000/${imgUrl}`;
+                    // Now that Next.js proxies the outputs directory, we can use a relative URL
+                    const fullUrl = imgUrl.startsWith('http') ? imgUrl : `/${imgUrl}`;
                     console.log(`Grad-CAM Image ${i}: ${fullUrl}`);
 
                     return (

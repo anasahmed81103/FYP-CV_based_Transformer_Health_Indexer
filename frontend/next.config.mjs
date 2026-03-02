@@ -13,6 +13,15 @@ const nextConfig = {
   // Explicitly set the root to silence the warning about multiple lockfiles
   // This tells Next.js to treat the parent directory (project root) as the tracing root
   outputFileTracingRoot: path.join(__dirname, "../"),
+
+  async rewrites() {
+    return [
+      {
+        source: '/outputs/:path*',
+        destination: 'http://127.0.0.1:8000/outputs/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

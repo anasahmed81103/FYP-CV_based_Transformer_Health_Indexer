@@ -18,7 +18,7 @@ class LandingScreen extends StatelessWidget {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.purple.withValues(alpha:0.3),
+                color: Colors.purple.withValues(alpha: 0.3),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
@@ -34,7 +34,7 @@ class LandingScreen extends StatelessWidget {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.blue.withValues(alpha:0.3),
+                color: Colors.blue.withValues(alpha: 0.3),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
@@ -85,18 +85,21 @@ class LandingScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () => Navigator.pushNamed(context, '/login'),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/login'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF6366F1),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: const Text('Login', style: TextStyle(fontSize: 16)),
+                          child: const Text('Login',
+                              style: TextStyle(fontSize: 16)),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => Navigator.pushNamed(context, '/signup'),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/signup'),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFF6366F1)),
                             foregroundColor: Colors.white,
@@ -105,7 +108,30 @@ class LandingScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text('Signup', style: TextStyle(fontSize: 16)),
+                          child: const Text('Signup',
+                              style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/about'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.amberAccent),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Architecture & Pipeline',
+                              style: TextStyle(fontSize: 16)),
                         ),
                       ),
                     ],
@@ -118,7 +144,8 @@ class LandingScreen extends StatelessWidget {
                     icon: Icons.bolt,
                     color: Colors.orange,
                     title: 'Lightning Fast',
-                    description: 'Experience blazing fast performance with our optimized infrastructure.',
+                    description:
+                        'Experience blazing fast performance with our optimized infrastructure.',
                   ),
                   const SizedBox(height: 16),
                   _buildFeatureCard(
@@ -126,7 +153,8 @@ class LandingScreen extends StatelessWidget {
                     icon: Icons.security,
                     color: Colors.green,
                     title: 'Secure & Reliable',
-                    description: 'Your data is protected with enterprise-grade security measures.',
+                    description:
+                        'Your data is protected with enterprise-grade security measures.',
                   ),
                   const SizedBox(height: 16),
                   _buildFeatureCard(
@@ -134,7 +162,8 @@ class LandingScreen extends StatelessWidget {
                     icon: Icons.thumb_up,
                     color: Colors.purple,
                     title: 'User Friendly',
-                    description: 'Intuitive interface designed for maximum productivity and ease of use.',
+                    description:
+                        'Intuitive interface designed for maximum productivity and ease of use.',
                   ),
 
                   const SizedBox(height: 40),
@@ -153,13 +182,16 @@ class LandingScreen extends StatelessWidget {
   }
 
   Widget _buildFeatureCard(BuildContext context,
-      {required IconData icon, required Color color, required String title, required String description}) {
+      {required IconData icon,
+      required Color color,
+      required String title,
+      required String description}) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withValues(alpha:0.5),
+        color: const Color(0xFF1E293B).withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha:0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +199,7 @@ class LandingScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha:0.2),
+              color: color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -175,7 +207,8 @@ class LandingScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(
