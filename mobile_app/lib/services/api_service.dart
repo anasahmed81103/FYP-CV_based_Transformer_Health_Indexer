@@ -20,10 +20,10 @@ class ApiService {
   }
 
   static String get imageBaseUrl {
-    if (kIsWeb) return 'http://localhost:8000';
+    if (kIsWeb) return 'http://192.168.100.15:3000';
     return Platform.isAndroid
-        ? 'http://10.0.2.2:8000'
-        : 'http://localhost:8000';
+        ? 'http://192.168.100.15:3000'
+        : 'http://192.168.100.15:3000';
   }
 
   static String? _authToken;
@@ -209,9 +209,10 @@ class ApiService {
   }
 
   static Future<AnalysisResult> analyze(String transformerId, String location,
-      String date, String time, List<XFile> images) async {
-    // Endpoint is /predict
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/predict'));
+      String date, String time, List<XFile> images,
+      {String? feedback}) async {
+    // Endpoint is /analyze to hit Next.js API route that handles DB just like Web App
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/analyze'));
 
     // ... (rest of the headers logic)
 
@@ -232,6 +233,9 @@ class ApiService {
     request.fields['location'] = location;
     request.fields['date'] = date;
     request.fields['time'] = time;
+    if (feedback != null && feedback.isNotEmpty) {
+      request.fields['feedback'] = feedback;
+    }
 
     try {
       if (kIsWeb) {
