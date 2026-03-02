@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -577,8 +577,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // e.g. "Bushing_cracks_score" -> Bushing
     // "Oil_leakage_score" -> Main Tank?
 
-    if (score < 3.0)
+    if (score < 3.0) {
       return null; // No action for low scores? Or maybe "Monitor"?
+    }
 
     // Specific rules
     final nameLower = paramName.toLowerCase();

@@ -34,7 +34,7 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     _authToken = prefs.getString(_tokenKey);
     if (kDebugMode && _authToken != null) {
-      print('Token loaded from storage: $_authToken');
+      debugPrint('Token loaded from storage: $_authToken');
     }
   }
 

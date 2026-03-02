@@ -33,7 +33,6 @@ class MyApp extends StatelessWidget {
           seedColor: const Color(0xFF6366F1), // Indigo-like color
           brightness: Brightness.dark,
           surface: const Color(0xFF0F172A), // Slate 900
-          background: const Color(0xFF020617), // Slate 950
         ),
         scaffoldBackgroundColor: const Color(0xFF020617),
         textTheme:

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -119,11 +119,13 @@ class _AdminScreenState extends State<AdminScreen> {
         setState(() => _isLoading = true);
         try {
           await ApiService.updateUserRole(userId, roleValue);
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Role updated to $roleLabel')),
           );
           _loadUsers(); // Refresh list
         } catch (e) {
+          if (!mounted) return;
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: $e')),
