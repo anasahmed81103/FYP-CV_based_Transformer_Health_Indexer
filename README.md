@@ -1,167 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚡ KE-Portal: Transformer Health Indexer
 
-## Getting Started
+![Project Banner](https://img.shields.io/badge/AI-Powered-6366F1?style=for-the-badge) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white) ![Next JS](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white) ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white) ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 
-First, run the development server:
+An advanced Computer Vision and Deep Learning system for real-time **Pole Mounted Transformer (PMT)** health analysis. Predict failures before they happen with state-of-the-art AI technology integrated beautifully into both a Web Portal and a Mobile Application.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🌟 Key Features
+
+*   **Intelligence Pipeline:** 
+    *   **PMT Classifier Verification:** Non-associated images are immediately filtered using a dedicated classifying neural network to optimize computational load.
+    *   **Health Regression Engine:** Evaluates 13 critical structural parameters (e.g., Oil Leakages, Rust, Bushing Cracks) using an **EfficientNet-B0** model to output a concrete Health Defect Percentage.
+*   **Grad-CAM Visualizations:** Automatically overlays predictive interactive heatmaps (Grad-CAM) marking exactly where structural defects exist on the original field photograph.
+*   **Role-Based Access Control (RBAC):** Strict security tiers (Admin, User, Suspended).
+*   **Cross-Platform Architecture:**
+    *   **Web Portal**: Next.js & Drizzle ORM powered frontend.
+    *   **Mobile App**: Flutter application encompassing GPS mapping, automated Reverse Geocoding (Nominatim), and built-in **Speech-to-Text microphone feedback**.
+*   **In-Depth History & Auditing:** PostgreSQL data lakes logging image assets, generated heatmaps, specific geolocation footprinting, and manually collected technician notes.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+You must manually configure the raw dataset environment initially due to heavy file sizes. Create a folder named `data` in the root repository.
+
+```text
+Transformer_Health_Index/
+├── data/
+│   ├── raw/
+│   │   ├── metadata.csv
+│   │   └── images/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Backend Setup (PyTorch Intelligence Engine)
+Create an isolated Python environment and install the ML requirements.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-=============================================================
-for configuration, do the following:
--------------------------------------------
-in front end:
-npm i
-
-in root also:
+```bash
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
+```
 
-=============================================
+**Generate the Processed Datasets & Train Models:**
+```bash
+python core/data_cleaning.py
+python backend/train.py
+```
 
-keep in mind that the data folder has been ignored due to its possibly huge sizes in the future. therefore everyone has to create it manually on their system.
-the folder is named "data", and its directly inside the root folder. it has a "raw" and "processed" inside it. the raw folder has an "images" folder and a metadata.csv.
-the contents of the processes folder will be generated on program execution.
+**Start the Deep Learning Server:**
+_Note: Bind to `0.0.0.0` if you plan to access the API remotely via your Mobile App on the same LAN._
+```bash
+python -m uvicorn backend.api.main:app --reload --host 0.0.0.0
+```
 
-sequence for model execution:
--data_cleaning.py
--train.py
--evaluate.py
--gradcam.py
+### 3. Frontend Setup (Next.js Web Portal)
+The web portal acts as the routing orchestrator and provides the primary visual dashboard.
 
--backend and its other modules like core and models have been setup so that they can run from root
--to run front end, first cd frontend, and then npm run dev
-
-
-test account: alicena@gmail.com
-              123abcABC
-
-==============================================
-execute the whole:
-
-start backend:
-python -m uvicorn backend.api.main:app --reload   
-
-start front end:
+```bash
 cd frontend
+npm install
 npm run dev
+```
+_Visit `http://localhost:3000` to interact with the Next.js Dashboard._
 
-==============================================
+**Test Account:**
+*   **Email:** `alicena@gmail.com`
+*   **Password:** `123abcABC`
 
-for ease of understanding, here is the project herirarchy:
+### 4. Mobile App Setup (Flutter)
+The newly integrated mobile application allows field technicians to rapidly evaluate transformers with voice notes and automated geofencing.
 
+```bash
+cd mobile_app
+flutter run -d web-server --web-hostname <YOUR_LAN_IP>
+```
+_Configure `<YOUR_LAN_IP>` (e.g. `192.168.100.15`) inside `mobile_app/.env` and `lib/services/api_service.dart` to securely bind requests through the Next.js reverse proxy gateway!_
+
+---
+
+## 📁 Project Architecture Map
+
+```text
 Transformer_Health_Index/
 │
-├── .gitignore                        # Ignore rules (venv, node_modules, data, etc.)
-├── README.md                         # Project overview and setup instructions
-├── requirements.txt                  # Python dependencies
+├── 📁 backend/                       # Model evaluations, Grad-CAM, and FastAPI
+├── 📁 core/                          # Data cleaning, custom PyTorch datasets, and Augmentations
+├── 📁 models/                        # PyTorch Architectures (Custom CNN, ResNet, EfficientNet, PMT Classifier)
 │
-├── 📁 venv/                          # Python virtual environment (ignored in git)
+├── 📁 frontend/                      # Web Portal
+│   ├── 📁 src/app/                   # React Next.js UI Structure, Dashboards, Admin UI
+│   └── 📁 db/                        # Drizzle ORM Schema arrays & PostgreSQL routing
 │
-├── 📁 data/                          # Raw & processed datasets (ignored in git)
-│   ├── 📁 raw/
-│   │   ├── metadata.csv
-│   │   └── 📁 images/
-│   │       ├── image1.jpg
-│   │       └── ...
-│   └── 📁 processed/
-│       ├── train.csv
-│       ├── val.csv
-│       └── test.csv
+├── 📁 mobile_app/                    # Flutter Field Application
+│   ├── 📁 lib/screens/               # Stateful Mobile Views (Dashboards, Maps, About)
+│   └── 📁 lib/services/              # Bridging Dart logic to the Next.js / FastAPI Gateway
 │
-├── 📁 core/                          # Core machine learning utilities
-│   ├── __init__.py
-│   ├── augment.py                    # Data augmentation logic
-│   ├── config.py                     # Global config constants & paths
-│   ├── data_cleaning.py              # Cleaning / preprocessing
-│   ├── dataset.py                    # Custom PyTorch dataset definitions
-│   ├── hyperparameter_tuning.py      # Optimization / tuning scripts
-│   └── utils.py                      # Shared helper functions
-│
-├── 📁 models/                        # Model architectures
-│   ├── __init__.py
-│   ├── custom_cnn.py
-│   ├── efficientnet.py
-│   └── resnet.py
-│
-├── 📁 backend/                       # Model training, evaluation, and API
-│   ├── __init__.py
-│   ├── train.py                      # Training pipeline
-│   ├── evaluate.py                   # Evaluation + model predictions
-│   ├── gradCam.py                    # Grad-CAM generation for visualization
-│   └── 📁 api/
-│       ├── main.py                   # FastAPI app (serves /predict endpoint)
-│       └── __init__.py
-│
-├── 📁 outputs/                       # All generated model artifacts (ignored)
-│   ├── 📁 checkpoints/               # Saved model weights (.pth)
-│   │   └── custom_cnn_best.pth
-│   ├── 📁 gradcam/                   # Grad-CAM visualizations
-│   │   ├── gradcam_0.jpg
-│   │   └── gradcam_1.jpg
-│   ├── 📁 logs/                      # Training logs
-│   └── 📁 metrics/                   # CSV reports (MAE, R², etc.)
-│       └── custom_cnn_best_metrics.csv
-│
-├── 📁 frontend/                      # Next.js + Supabase web portal
-│   ├── .env.local                    # Frontend environment variables
-│   ├── 📁 db/                        # Drizzle ORM setup
-│   │   ├── index.ts
-│   │   └── schema.ts
-│   ├── 📁 drizzle/                   # SQL migrations
-│   │   ├── 0000_migration_stuff.sql
-│   │   └── 📁 meta/
-│   │       ├── journal.json
-│   │       └── 0000_snapshot.json
-│   ├── 📁 public/                    # Static assets (SVGs, icons)
-│   ├── 📁 scripts/                   # Drizzle or utility scripts
-│   │   └── migrate.ts
-│   ├── 📁 src/app/                   # Main Next.js app
-│   │   ├── 📁 api/                   # Next.js API routes → talk to FastAPI
-│   │   ├── 📁 login/                 # Login page
-│   │   ├── 📁 user_dashboard/        # Dashboard → model integration
-│   │   ├── 📁 user_history/          # History of past predictions
-│   │   ├── CSS_GUIDE.md
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   ├── page.module.css
-│   │   └── shared.module.css
-│   ├── .next/                        # Build output (ignored)
-│   ├── node_modules/                 # JS dependencies (ignored)
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── next.config.ts                # Frontend configuration (domains, etc.)
-│
-└── 📁 temp_uploads/                  # Temporary user image uploads (ignored)
+├── 📁 outputs/                       # Non-tracked Model Artifacts (.pth models, Heatmaps, MAE/R2 Reports)
+├── 📁 temp_uploads/                  # Live inference media buffer
+└── 📁 data/                          # Unignored Raw Dataset mapping
+```
 
-
+---
+_© 2025 KE Portal. Developed to modernize and secure field infrastructure matrices._
