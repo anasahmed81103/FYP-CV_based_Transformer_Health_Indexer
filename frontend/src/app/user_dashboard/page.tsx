@@ -19,9 +19,14 @@ import {
   FaCrown,
   FaSignOutAlt,
   FaWrench,
+  FaMicrophone,
+  FaCommentDots,
 } from 'react-icons/fa';
 
 const MapModal = dynamic(() => import('@/app/components/MapModal'), { ssr: false });
+
+// Cache for images across soft navigations
+let cachedImages: File[] = [];
 
 // Maximum possible score for the Health Index (13 parameters * max score of 6)
 const MAX_DEFECT_SUM = 13 * 6; // This is 78.00
@@ -96,6 +101,7 @@ export default function UserDashboard() {
   const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
 
   // --- Form/Analysis State ---
+  const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
   const [transformerId, setTransformerId] = useState('');
   const [location, setLocation] = useState('');
   const [coords, setCoords] = useState<[number, number] | null>(null);
@@ -105,6 +111,9 @@ export default function UserDashboard() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [images, setImages] = useState<File[]>([]);
+  const [feedback, setFeedback] = useState('');
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{
     gradcamImages: string[];
@@ -112,6 +121,48 @@ export default function UserDashboard() {
     allParameters: Parameter[];
     nonPmtImages: string[];
   } | null>(null);
+
+  // Load state from sessionStorage and global cache on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('dashboardFormData');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.transformerId) setTransformerId(parsed.transformerId);
+        if (parsed.location) setLocation(parsed.location);
+        if (parsed.coords) setCoords(parsed.coords);
+        if (parsed.locationPermissionDenied !== undefined) setLocationPermissionDenied(parsed.locationPermissionDenied);
+        if (parsed.date) setDate(parsed.date);
+        if (parsed.time) setTime(parsed.time);
+        if (parsed.feedback) setFeedback(parsed.feedback);
+      }
+    } catch (e) {
+      console.warn("Could not parse dashboardFormData", e);
+    }
+    setImages(cachedImages);
+    setHasLoadedStorage(true);
+  }, []);
+
+  // Save state to sessionStorage
+  useEffect(() => {
+    if (hasLoadedStorage) {
+      const dataToSave = {
+        transformerId,
+        location,
+        coords,
+        locationPermissionDenied,
+        date,
+        time,
+        feedback
+      };
+      sessionStorage.setItem('dashboardFormData', JSON.stringify(dataToSave));
+    }
+  }, [hasLoadedStorage, transformerId, location, coords, locationPermissionDenied, date, time, feedback]);
+
+  // Keep global image cache in sync
+  useEffect(() => {
+    cachedImages = images;
+  }, [images]);
 
   // --- Memoized Values (Hooks MUST be defined before conditional returns) ---
 
@@ -140,15 +191,39 @@ export default function UserDashboard() {
         setCurrentUserRole(role);
         setCurrentUserEmail(email);
 
-        if (role === "suspended" || role === "guest") router.replace("/login");
-        else setIsAuthLoading(false);
+        if (role === "suspended" || role === "guest") {
+          router.replace("/login");
+        } else {
+          setIsAuthLoading(false);
+          // Request microphone permission on mount
+          if ((role === "user" || role === "admin") && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+              .then((stream) => {
+                // Instantly stop the stream as we only needed to trigger the permission prompt
+                stream.getTracks().forEach(track => track.stop());
+              })
+              .catch((err) => {
+                console.warn("Microphone access permission was denied or not available.", err);
+              });
+          }
+        }
       } catch {
         router.replace("/login");
       }
     };
     checkAuth();
-    if (!coords && !location) setShowLocationPrompt(true);
-  }, [coords, location, router]);
+  }, [router]);
+
+  // Effect 2: Location Prompt
+  useEffect(() => {
+    if (hasLoadedStorage) {
+      if (!coords && !location && !locationPermissionDenied) {
+        setShowLocationPrompt(true);
+      } else {
+        setShowLocationPrompt(false);
+      }
+    }
+  }, [hasLoadedStorage, coords, location, locationPermissionDenied]);
 
   // --- Conditional Return (Comes AFTER all Hooks) ---
   if (isAuthLoading) return <div className={styles.container}>Loading Dashboard...</div>;
@@ -157,6 +232,8 @@ export default function UserDashboard() {
 
   const handleLogout = async () => {
     try {
+      sessionStorage.removeItem('dashboardFormData');
+      cachedImages = [];
       await fetch('/api/logout', { method: 'POST' });
       router.replace('/login');
     } catch {
@@ -201,6 +278,46 @@ export default function UserDashboard() {
 
   const removeImage = (index: number) => setImages((prev) => prev.filter((_, i) => i !== index));
 
+  const startRecording = () => {
+    // Check if browser supports speech recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support Speech Recognition. Please type your feedback.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setFeedback((prev) => prev ? prev + ' ' + transcript : transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsRecording(false);
+      alert("Microphone error: " + event.error);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error('Recognition error:', e);
+      setIsRecording(false);
+    }
+  };
+
   // --- ANALYZE ---
   const handleAnalyze = async () => {
     if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
@@ -216,6 +333,7 @@ export default function UserDashboard() {
     formData.append('location', location);
     formData.append('date', date);
     formData.append('time', time);
+    if (feedback) formData.append('feedback', feedback);
     images.forEach((img) => formData.append('files', img));
 
     try {
@@ -342,6 +460,80 @@ export default function UserDashboard() {
               ))}
             </div>
           </div>
+
+          {/* Feedback Section (Accessible to both user and admin roles) */}
+          {(currentUserRole === 'user' || currentUserRole === 'admin') && (
+            <div className={styles.inputGroup} style={{ marginTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowFeedback(!showFeedback)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#f97316',
+                    color: 'white',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                    transition: 'transform 0.2s'
+                  }}
+                  title={showFeedback ? "Close Feedback" : "Add Feedback"}
+                >
+                  {showFeedback ? <FaTimes size={18} /> : <FaCommentDots size={20} />}
+                </button>
+                <span className={styles.label} style={{ margin: 0, fontSize: '0.95rem' }}>
+                  {showFeedback ? "Hide Analysis Notes" : "Add Analysis Notes (Optional)"}
+                </span>
+              </div>
+
+              {showFeedback && (
+                <div style={{ position: 'relative', animation: 'fadeIn 0.3s ease-in-out' }}>
+                  <textarea
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Enter any manual observations, maintenance notes, or specific conditions..."
+                    className={styles.input}
+                    style={{
+                      minHeight: '100px',
+                      padding: '1rem',
+                      paddingRight: '3rem',
+                      resize: 'vertical',
+                      lineHeight: '1.5',
+                      borderRadius: '12px'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '12px',
+                      background: isRecording ? 'rgba(239, 68, 68, 0.1)' : 'none',
+                      border: 'none',
+                      color: isRecording ? '#ef4444' : '#9ca3af',
+                      cursor: 'pointer',
+                      borderRadius: '50%',
+                      padding: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      boxShadow: isRecording ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none'
+                    }}
+                    title={isRecording ? "Listening..." : "Click to Speak"}
+                  >
+                    <FaMicrophone size={isRecording ? 22 : 20} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <button onClick={handleAnalyze} className={styles.analyzeButton} disabled={isAnalyzing}>
             {isAnalyzing ? 'Analyzing...' : 'Analyze Health Index'}
