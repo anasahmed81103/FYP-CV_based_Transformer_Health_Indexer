@@ -36,7 +36,7 @@ async def predict(
             shutil.copyfileobj(file.file, buffer)
         saved_paths.append(path)
 
-    # Evaluate transformer (should return dict with predictions + gradcam paths)
+    # Evaluate transformer (returns predictions, gradcam, and PMT-only image features)
     result = evaluate_transformer(saved_paths)
 
     return result

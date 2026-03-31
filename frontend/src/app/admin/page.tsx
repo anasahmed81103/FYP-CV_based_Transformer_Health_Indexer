@@ -5,7 +5,7 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter as useNextRouter } from "next/navigation";
 
-import { Shield, User, UserCheck, UserX, Crown, History, LogOut } from "lucide-react";
+import { Shield, User, UserCheck, UserX, Crown, History, LogOut, BarChart3 } from "lucide-react";
 import styles from "./admin.module.css";
 
 // --- Types ---
@@ -266,6 +266,15 @@ export default function AdminPage() {
                 <span>View All History</span>
               </button>
             )}
+            <button 
+              onClick={() => router.push('/user_dashboard')} 
+              className={styles.btn} 
+              title="Analyze Transformer" 
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f97316', color: 'white', border: 'none' }}
+            >
+              <BarChart3 size={18} />
+              <span>Analyze</span>
+            </button>
             <button onClick={handleLogout} className={styles.btn} title="Logout" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
               <LogOut size={18} />
               <span>Logout</span>

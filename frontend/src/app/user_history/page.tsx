@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import styles from './user_history.module.css';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FaSignOutAlt } from 'react-icons/fa';
+import { FaSignOutAlt, FaChartLine, FaCrown } from 'react-icons/fa';
 
 // Define possible user roles
 type UserRole = "admin" | "user" | "suspended" | "guest";
@@ -225,6 +225,16 @@ export default function HistoryPage() {
                         <FaSignOutAlt size={16} />
                         <span>Logout</span>
                     </button>
+                    <button onClick={() => router.push('/user_dashboard')} title="Analyze Transformer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '0.5rem' }}>
+                        <FaChartLine size={16} />
+                        <span>Analyze</span>
+                    </button>
+                    {(currentUserRole === 'admin' || currentUserEmail === MASTER_ADMIN_EMAIL) && (
+                        <button onClick={() => router.push('/admin')} title="Admin Portal" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '0.5rem' }}>
+                            <FaCrown size={16} />
+                            <span>Admin</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -287,18 +297,18 @@ export default function HistoryPage() {
                                     <td>
                                         {log.providedImages && Array.isArray(log.providedImages) && log.providedImages.length > 0 ? (
                                             <div className={styles.imageThumbContainer}>
-                                                {log.providedImages.map((img, idx) => (
-                                                    <img
-                                                        key={idx}
-                                                        src={typeof img === 'string' ? img : ''}
-                                                        alt={`input-${idx}`}
-                                                        className={styles.imageThumb}
-                                                        onClick={(e) => {
-                                                            // Open in new tab on click
-                                                            window.open(typeof img === 'string' ? img : '', '_blank');
-                                                        }}
-                                                    />
-                                                ))}
+                                                {log.providedImages.map((img, idx) => {
+                                                    const imgSrc = typeof img === 'string' && img.trim() !== '' ? img : null;
+                                                    return imgSrc ? (
+                                                        <img
+                                                            key={idx}
+                                                            src={imgSrc}
+                                                            alt={`input-${idx}`}
+                                                            className={styles.imageThumb}
+                                                            onClick={() => window.open(imgSrc, '_blank')}
+                                                        />
+                                                    ) : null;
+                                                })}
                                             </div>
                                         ) : (
                                             <span className={styles.noData}>—</span>
@@ -308,20 +318,18 @@ export default function HistoryPage() {
                                         {log.gradCamImages && Array.isArray(log.gradCamImages) && log.gradCamImages.length > 0 ? (
                                             <div className={styles.imageThumbContainer}>
                                                 {log.gradCamImages.map((img, idx) => {
-                                                    const imgUrl = typeof img === 'string'
+                                                    const imgUrl = typeof img === 'string' && img.trim() !== ''
                                                         ? (img.startsWith('http') ? img : `http://127.0.0.1:8000/${img}`)
-                                                        : '';
-                                                    return (
+                                                        : null;
+                                                    return imgUrl ? (
                                                         <img
                                                             key={idx}
                                                             src={imgUrl}
                                                             alt={`gradcam-${idx}`}
                                                             className={styles.imageThumb}
-                                                            onClick={(e) => {
-                                                                window.open(imgUrl, '_blank');
-                                                            }}
+                                                            onClick={() => window.open(imgUrl, '_blank')}
                                                         />
-                                                    );
+                                                    ) : null;
                                                 })}
                                             </div>
                                         ) : (

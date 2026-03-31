@@ -21,6 +21,7 @@ from models.resnet import build_resnet
 from models.efficientnet import build_efficientnet
 from PIL import Image
 from backend.gradCam import generate_gradcam_for_image
+from backend.image_features import extract_image_features
 
 # 13 parameter column names (same as dataset)
 PARAM_COLUMNS = [
@@ -224,7 +225,8 @@ def evaluate_transformer(image_paths):
 
     all_preds = []
     gradcam_urls = [] 
-    valid_scores_list = [] 
+    valid_scores_list = []
+    pmt_image_features = []  # Only store features for PMT images
 
     # We need torch.set_grad_enabled(True) for GradCAM
     with torch.no_grad():
@@ -262,6 +264,14 @@ def evaluate_transformer(image_paths):
             
             all_preds.append(preds_dict)
             valid_scores_list.append(preds_dict)
+            
+            # --- Extract features for PMT images only ---
+            try:
+                features = extract_image_features(img_path)
+                pmt_image_features.append(features)
+                print(f"✅ Features extracted for PMT image: {os.path.basename(img_path)}")
+            except Exception as e:
+                print(f"⚠️ Feature extraction failed for {img_path}: {e}")
 
             # --- Step 3: Grad-CAM Generation ---
             
@@ -326,6 +336,7 @@ def evaluate_transformer(image_paths):
         "healthIndex": avg_health_index,
         "paramsScores": aggregated_params,
         "gradCamImages": gradcam_urls,
+        "providedImages": pmt_image_features,  # Only PMT image features
     }
 
 # -------------------------
