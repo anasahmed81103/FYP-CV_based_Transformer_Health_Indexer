@@ -5,7 +5,7 @@ import { db } from "../../../../db";
 import { analysisLogs } from "../../../../db/schema";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // --- Helper to get JWT token from header or cookie ---
 async function getAuthToken(req: Request): Promise<string | null> {
@@ -91,6 +91,37 @@ export async function POST(req: Request) {
           message: "This Transformer ID already exists in the database. Please select it from 'Select Existing' to update its data.",
           existingId: transformerId
         }, { status: 409 }); // 409 Conflict
+      }
+
+      // For NEW transformers: Check if any image hash is already used by another transformer
+      if (isNewTransformer) {
+        const imageHashes = pmtImages
+          .map((img: any) => img.imageHash)
+          .filter((hash: string) => hash && hash.length > 0);
+
+        for (const hash of imageHashes) {
+          try {
+            // Query for existing record with this hash
+            const duplicateCheck = await db.execute(sql`
+              SELECT transformer_id 
+              FROM analysis_logs 
+              WHERE provided_images @> ${JSON.stringify([{ imageHash: hash }])}::jsonb
+              LIMIT 1
+            `);
+
+            const rows = duplicateCheck.rows || duplicateCheck;
+            if (rows && rows.length > 0) {
+              const existingTransformerId = (rows[0] as any).transformer_id;
+              return NextResponse.json({
+                error: "Duplicate image detected",
+                message: `This image is already registered with transformer "${existingTransformerId}". Please select that transformer to update, or use different images.`,
+                existingTransformerId
+              }, { status: 409 });
+            }
+          } catch (err) {
+            console.warn("Hash check failed, continuing:", err);
+          }
+        }
       }
 
       if (existingRecord.length > 0) {

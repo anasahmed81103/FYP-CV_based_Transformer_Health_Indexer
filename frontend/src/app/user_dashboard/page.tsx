@@ -130,6 +130,11 @@ export default function UserDashboard() {
   const [isNewTransformer, setIsNewTransformer] = useState(true); // true = typing new ID, false = selecting existing
   const [showTransformerDropdown, setShowTransformerDropdown] = useState(false);
 
+  // --- Verification State ---
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationScore, setVerificationScore] = useState(0);
+  const [pendingAnalysis, setPendingAnalysis] = useState(false);
+
   // Load state from sessionStorage and global cache on mount
   useEffect(() => {
     try {
@@ -364,15 +369,69 @@ export default function UserDashboard() {
   };
 
   // --- ANALYZE ---
-  const handleAnalyze = async () => {
-    if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
-      alert('Please fill all fields and upload at least one image.');
-      return;
+  // Verify transformer images against stored features
+  const verifyTransformerImages = async (): Promise<{ proceed: boolean; requiresConfirmation: boolean; score: number }> => {
+    // Skip verification for new transformers
+    if (isNewTransformer) {
+      return { proceed: true, requiresConfirmation: false, score: 1.0 };
     }
 
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
+    try {
+      // Fetch stored features for this transformer
+      const featuresRes = await fetch(`/api/transformers/${encodeURIComponent(transformerId)}/features`);
+      if (!featuresRes.ok) {
+        console.warn('Could not fetch stored features, proceeding anyway');
+        return { proceed: true, requiresConfirmation: false, score: 1.0 };
+      }
 
+      const featuresData = await featuresRes.json();
+      const storedFeatures = featuresData.features || [];
+
+      // If no stored features, allow (first analysis for this transformer)
+      if (!storedFeatures || storedFeatures.length === 0) {
+        return { proceed: true, requiresConfirmation: false, score: 1.0 };
+      }
+
+      // Call backend verification endpoint
+      const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+      const verifyFormData = new FormData();
+      images.forEach((img) => verifyFormData.append('files', img));
+      verifyFormData.append('stored_features', JSON.stringify(storedFeatures));
+
+      const verifyRes = await fetch(`${backendUrl}/verify-transformer`, {
+        method: 'POST',
+        body: verifyFormData
+      });
+
+      if (!verifyRes.ok) {
+        console.warn('Verification failed, proceeding anyway');
+        return { proceed: true, requiresConfirmation: false, score: 1.0 };
+      }
+
+      const verifyResult = await verifyRes.json();
+      console.log('Verification result:', verifyResult);
+
+      if (verifyResult.status === 'match') {
+        return { proceed: true, requiresConfirmation: false, score: verifyResult.score };
+      } else if (verifyResult.status === 'grey_zone') {
+        return { proceed: false, requiresConfirmation: true, score: verifyResult.score };
+      } else {
+        // reject
+        alert(`❌ ${verifyResult.message}`);
+        return { proceed: false, requiresConfirmation: false, score: verifyResult.score };
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+      // On error, allow to proceed
+      return { proceed: true, requiresConfirmation: false, score: 1.0 };
+    }
+  };
+
+  // Proceed with actual analysis (after verification)
+  const proceedWithAnalysis = async () => {
+    setShowVerificationModal(false);
+    setPendingAnalysis(false);
+    
     const formData = new FormData();
     formData.append('transformer_id', transformerId);
     formData.append('location', location);
@@ -383,9 +442,6 @@ export default function UserDashboard() {
     images.forEach((img) => formData.append('files', img));
 
     try {
-      // *** FIX: Changed API path from /api/analyze to the full FastAPI endpoint path ***
-      // REVERTED FIX: Now pointing to /api/analyze so that the Next.js server can LOG the history to the database.
-      // The Next.js API route will proxy the request to the Python backend.
       const res = await fetch('/api/analyze', { method: 'POST', body: formData });
 
       // Handle duplicate transformer ID error
@@ -399,7 +455,7 @@ export default function UserDashboard() {
       if (!res.ok) throw new Error('Analysis failed.');
       const data = await res.json();
 
-      console.log('Backend response:', data); // IMPORTANT: Check this for debugging!
+      console.log('Backend response:', data);
 
       // Show appropriate success message based on database action
       if (data.dbAction === 'updated') {
@@ -416,10 +472,10 @@ export default function UserDashboard() {
       const processedParameters = Object.entries(data.paramsScores || {}).map(
         ([name, score]) => {
           const s = Number(score);
-          const cleanName = name.replace(/_/g, ' ').replace('score', '').trim(); // Clean name
+          const cleanName = name.replace(/_/g, ' ').replace('score', '').trim();
           return {
             name: cleanName,
-            score: s, // Raw Defect Score (0-6)
+            score: s,
             requiredAction: getRequiredAction(cleanName, Math.round(s)),
           };
         }
@@ -427,7 +483,7 @@ export default function UserDashboard() {
 
       setAnalysisResult({
         gradcamImages: data.gradCamImages || [],
-        healthIndex: Number(data.healthIndex || 0), // Raw Defect Sum (0-78)
+        healthIndex: Number(data.healthIndex || 0),
         allParameters: processedParameters,
         nonPmtImages: nonPmt,
       });
@@ -437,6 +493,48 @@ export default function UserDashboard() {
       alert('Failed to analyze transformer images. Check backend server and console logs.');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
+      alert('Please fill all fields and upload at least one image.');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+
+    // For existing transformers, verify images first
+    if (!isNewTransformer) {
+      const verification = await verifyTransformerImages();
+      
+      if (verification.requiresConfirmation) {
+        // Show confirmation modal for grey zone
+        setVerificationScore(verification.score);
+        setShowVerificationModal(true);
+        setPendingAnalysis(true);
+        return; // Wait for user confirmation
+      }
+      
+      if (!verification.proceed) {
+        setIsAnalyzing(false);
+        return; // Hard reject
+      }
+    }
+
+    // Proceed with analysis
+    await proceedWithAnalysis();
+  };
+
+  // Handle user confirmation for grey zone
+  const handleVerificationConfirm = async (confirmed: boolean) => {
+    setShowVerificationModal(false);
+    if (confirmed) {
+      await proceedWithAnalysis();
+    } else {
+      setIsAnalyzing(false);
+      setPendingAnalysis(false);
     }
   };
 
@@ -610,6 +708,36 @@ export default function UserDashboard() {
                 <div className={styles.popupActions}>
                   <button className={styles.allowBtn} onClick={handleLocationAccess}>Allow Access</button>
                   <button className={styles.denyBtn} onClick={() => { setShowLocationPrompt(false); setLocationPermissionDenied(true); }}>Deny</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Verification Confirmation Modal */}
+          {showVerificationModal && (
+            <div className={styles.locationPopupOverlay}>
+              <div className={styles.locationPopup} style={{ maxWidth: '450px' }}>
+                <h3 style={{ color: '#f59e0b', marginBottom: '1rem' }}>⚠️ Image Verification</h3>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  The uploaded images have a <strong>{(verificationScore * 100).toFixed(0)}%</strong> similarity match with the stored images for transformer <strong>{transformerId}</strong>.
+                </p>
+                <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.9rem' }}>
+                  This could be the same transformer from a different angle. Do you want to proceed?
+                </p>
+                <div className={styles.popupActions}>
+                  <button 
+                    className={styles.allowBtn} 
+                    onClick={() => handleVerificationConfirm(true)}
+                    style={{ background: '#22c55e' }}
+                  >
+                    Yes, same transformer
+                  </button>
+                  <button 
+                    className={styles.denyBtn} 
+                    onClick={() => handleVerificationConfirm(false)}
+                  >
+                    No, cancel
+                  </button>
                 </div>
               </div>
             </div>
