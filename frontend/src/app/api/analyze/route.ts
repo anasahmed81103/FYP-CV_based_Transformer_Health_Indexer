@@ -5,6 +5,7 @@ import { db } from "../../../../db";
 import { analysisLogs } from "../../../../db/schema";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+import { eq } from "drizzle-orm";
 
 // --- Helper to get JWT token from header or cookie ---
 async function getAuthToken(req: Request): Promise<string | null> {
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
   const date = formData.get("date") as string;
   const time = formData.get("time") as string;
   const feedback = formData.get("feedback") as string || null;
+  const isNewTransformer = formData.get("is_new_transformer") === "true";
 
   const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
@@ -70,23 +72,69 @@ export async function POST(req: Request) {
     // The Python backend returns 'paramsScores' as a dictionary: { "Rust": 4.0, ... }
     const paramsScores = analysisData.paramsScores || {};
 
-    // --- Save log to database ---
-    await db.insert(analysisLogs).values({
-      userId,
-      transformerId,
-      location,
-      inferenceDate: date,
-      inferenceTime: time,
-      feedback: feedback,
-      healthIndexScore: parseFloat(Number(rawDefectSum).toFixed(2)), // Store RAW DEFECT SUM (0-78) to match dashboard display
-      paramsScores, // JSONB field
-      providedImages: analysisData.providedImages || [],
-      gradCamImages: analysisData.gradCamImages || [],
-      status: status,
-    });
+    // --- Save log to database only if there are PMT images ---
+    const pmtImages = analysisData.providedImages || [];
+    let dbAction: 'created' | 'updated' | 'skipped' = 'skipped';
+    
+    if (pmtImages.length > 0) {
+      // Check if transformer_id already exists
+      const existingRecord = await db
+        .select()
+        .from(analysisLogs)
+        .where(eq(analysisLogs.transformerId, transformerId))
+        .limit(1);
+
+      // If user is trying to create new transformer but ID already exists, reject
+      if (isNewTransformer && existingRecord.length > 0) {
+        return NextResponse.json({
+          error: "Transformer ID already exists",
+          message: "This Transformer ID already exists in the database. Please select it from 'Select Existing' to update its data.",
+          existingId: transformerId
+        }, { status: 409 }); // 409 Conflict
+      }
+
+      if (existingRecord.length > 0) {
+        // Update existing record
+        await db
+          .update(analysisLogs)
+          .set({
+            userId,
+            location,
+            inferenceDate: date,
+            inferenceTime: time,
+            feedback: feedback,
+            healthIndexScore: parseFloat(Number(rawDefectSum).toFixed(2)),
+            paramsScores,
+            providedImages: pmtImages,
+            gradCamImages: analysisData.gradCamImages || [],
+            status: status,
+          })
+          .where(eq(analysisLogs.transformerId, transformerId));
+        dbAction = 'updated';
+      } else {
+        // Create new record
+        await db.insert(analysisLogs).values({
+          userId,
+          transformerId,
+          location,
+          inferenceDate: date,
+          inferenceTime: time,
+          feedback: feedback,
+          healthIndexScore: parseFloat(Number(rawDefectSum).toFixed(2)),
+          paramsScores,
+          providedImages: pmtImages,
+          gradCamImages: analysisData.gradCamImages || [],
+          status: status,
+        });
+        dbAction = 'created';
+      }
+    }
 
     // --- Return full results to frontend ---
-    return NextResponse.json(analysisData);
+    return NextResponse.json({
+      ...analysisData,
+      dbAction, // 'created', 'updated', or 'skipped'
+    });
   } catch (error) {
     console.error("Error in /api/analyze:", error);
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
