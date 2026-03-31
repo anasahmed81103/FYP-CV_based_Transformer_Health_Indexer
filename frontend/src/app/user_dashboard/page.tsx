@@ -122,6 +122,14 @@ export default function UserDashboard() {
     nonPmtImages: string[];
   } | null>(null);
 
+  // --- Transformer Selector State ---
+  const [existingTransformers, setExistingTransformers] = useState<{ transformerId: string; location: string }[]>([]);
+  const [isLoadingTransformers, setIsLoadingTransformers] = useState(false);
+  const [transformerPage, setTransformerPage] = useState(1);
+  const [hasMoreTransformers, setHasMoreTransformers] = useState(false);
+  const [isNewTransformer, setIsNewTransformer] = useState(true); // true = typing new ID, false = selecting existing
+  const [showTransformerDropdown, setShowTransformerDropdown] = useState(false);
+
   // Load state from sessionStorage and global cache on mount
   useEffect(() => {
     try {
@@ -241,6 +249,43 @@ export default function UserDashboard() {
     }
   };
 
+  // Fetch existing transformers with pagination
+  const fetchTransformers = async (page = 1, append = false) => {
+    setIsLoadingTransformers(true);
+    try {
+      const res = await fetch(`/api/transformers?page=${page}&limit=30`);
+      if (res.ok) {
+        const data = await res.json();
+        if (append) {
+          setExistingTransformers(prev => [...prev, ...data.transformers]);
+        } else {
+          setExistingTransformers(data.transformers);
+        }
+        setHasMoreTransformers(data.pagination.hasMore);
+        setTransformerPage(page);
+      }
+    } catch (err) {
+      console.error("Failed to fetch transformers:", err);
+    } finally {
+      setIsLoadingTransformers(false);
+    }
+  };
+
+  // Handle selecting an existing transformer
+  const handleSelectTransformer = (transformer: { transformerId: string; location: string }) => {
+    setTransformerId(transformer.transformerId);
+    if (transformer.location) {
+      setLocation(transformer.location);
+    }
+    setShowTransformerDropdown(false);
+    setIsNewTransformer(false);
+  };
+
+  // Load more transformers for pagination
+  const handleLoadMoreTransformers = () => {
+    fetchTransformers(transformerPage + 1, true);
+  };
+
   const handleLocationAccess = async () => {
     if (!navigator.geolocation) {
       alert("Geolocation not supported.");
@@ -333,6 +378,7 @@ export default function UserDashboard() {
     formData.append('location', location);
     formData.append('date', date);
     formData.append('time', time);
+    formData.append('is_new_transformer', isNewTransformer.toString());
     if (feedback) formData.append('feedback', feedback);
     images.forEach((img) => formData.append('files', img));
 
@@ -342,10 +388,25 @@ export default function UserDashboard() {
       // The Next.js API route will proxy the request to the Python backend.
       const res = await fetch('/api/analyze', { method: 'POST', body: formData });
 
+      // Handle duplicate transformer ID error
+      if (res.status === 409) {
+        const errData = await res.json();
+        alert(`⚠️ ${errData.message || 'Transformer ID already exists. Please select from existing records.'}`);
+        setIsAnalyzing(false);
+        return;
+      }
+
       if (!res.ok) throw new Error('Analysis failed.');
       const data = await res.json();
 
       console.log('Backend response:', data); // IMPORTANT: Check this for debugging!
+
+      // Show appropriate success message based on database action
+      if (data.dbAction === 'updated') {
+        alert('✅ Transformer information updated successfully!');
+      } else if (data.dbAction === 'created') {
+        alert('✅ New transformer record created successfully!');
+      }
 
       const nonPmt = (data.predictions || [])
         .filter((p: any) => p.status === 'non-pmt')
@@ -402,7 +463,142 @@ export default function UserDashboard() {
           {/* Transformer ID */}
           <div className={styles.inputGroup}>
             <label className={styles.label}><FaBolt className={styles.icon} /> Transformer ID <span className={styles.required}>*</span></label>
-            <input type="text" placeholder="Enter Transformer ID" value={transformerId} onChange={(e) => setTransformerId(e.target.value)} className={styles.input} />
+            
+            {/* Toggle buttons for New/Existing */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <button
+                type="button"
+                onClick={() => { setIsNewTransformer(true); setShowTransformerDropdown(false); setTransformerId(''); setLocation(''); }}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  backgroundColor: isNewTransformer ? '#f97316' : '#e5e7eb',
+                  color: isNewTransformer ? 'white' : '#374151',
+                  transition: 'all 0.2s'
+                }}
+              >
+                New Transformer
+              </button>
+              <button
+                type="button"
+                onClick={() => { 
+                  setIsNewTransformer(false); 
+                  setShowTransformerDropdown(true);
+                  if (existingTransformers.length === 0) fetchTransformers(1);
+                }}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  backgroundColor: !isNewTransformer ? '#f97316' : '#e5e7eb',
+                  color: !isNewTransformer ? 'white' : '#374151',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Select Existing
+              </button>
+            </div>
+
+            {/* Input for new transformer or display selected */}
+            {isNewTransformer ? (
+              <input 
+                type="text" 
+                placeholder="Enter New Transformer ID" 
+                value={transformerId} 
+                onChange={(e) => setTransformerId(e.target.value)} 
+                className={styles.input} 
+              />
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="Click to select existing transformer"
+                  value={transformerId}
+                  readOnly
+                  onClick={() => {
+                    setShowTransformerDropdown(!showTransformerDropdown);
+                    if (existingTransformers.length === 0) fetchTransformers(1);
+                  }}
+                  className={styles.input}
+                  style={{ cursor: 'pointer' }}
+                />
+                
+                {/* Dropdown for existing transformers */}
+                {showTransformerDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    maxHeight: '250px',
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}>
+                    {isLoadingTransformers && existingTransformers.length === 0 ? (
+                      <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>
+                        Loading transformers...
+                      </div>
+                    ) : existingTransformers.length === 0 ? (
+                      <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>
+                        No existing transformers found
+                      </div>
+                    ) : (
+                      <>
+                        {existingTransformers.map((t, idx) => (
+                          <div
+                            key={`${t.transformerId}-${idx}`}
+                            onClick={() => handleSelectTransformer(t)}
+                            style={{
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid #f3f4f6',
+                              transition: 'background-color 0.15s'
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+                          >
+                            <div style={{ fontWeight: 600, color: '#1f2937', fontSize: '14px' }}>{t.transformerId}</div>
+                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {t.location || 'No location'}
+                            </div>
+                          </div>
+                        ))}
+                        {hasMoreTransformers && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleLoadMoreTransformers(); }}
+                            disabled={isLoadingTransformers}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              border: 'none',
+                              backgroundColor: '#f3f4f6',
+                              color: '#4b5563',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              fontWeight: 500
+                            }}
+                          >
+                            {isLoadingTransformers ? 'Loading...' : 'Load More'}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Location Prompt */}
