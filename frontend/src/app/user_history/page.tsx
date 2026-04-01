@@ -37,6 +37,16 @@ export default function HistoryPage() {
     const [filter, setFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({
+        totalCount: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+        hasMore: false
+    });
+
     // --- STATE FOR AUTHORIZATION ---
     const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
     const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
@@ -45,25 +55,23 @@ export default function HistoryPage() {
     // ------------------------------------
 
     // MODIFIED: Function to fetch history data based on access scope
-    const fetchHistoryData = async (role: UserRole, email: string | null) => {
+    const fetchHistoryData = async (role: UserRole, email: string | null, page = 1) => {
         setLoading(true);
         setFetchError(null);
 
         const isGlobalAdmin = role === "admin" || email === MASTER_ADMIN_EMAIL;
-        let apiUrl = "/api/history"; // Default: fetch current user's history
+        let apiUrl = `/api/history?page=${page}&limit=10`; // Default: fetch current user's history with pagination
 
         if (isGlobalAdmin) {
             // Admin is requesting a specific scope
             if (targetUserId) {
                 // Admin viewing a specific user
-                apiUrl = `/api/admin/history?userId=${targetUserId}`;
+                apiUrl = `/api/admin/history?userId=${targetUserId}&page=${page}&limit=10`;
             } else if (scope === 'all') {
                 // Admin viewing all history
-                apiUrl = "/api/admin/history?scope=all";
+                apiUrl = `/api/admin/history?scope=all&page=${page}&limit=10`;
             }
-            // If isGlobalAdmin but no params, they view their own history (default /api/history)
         }
-        // If not isGlobalAdmin, apiUrl remains /api/history (their own)
 
         try {
             const res = await fetch(apiUrl, { cache: "no-store" });
@@ -80,8 +88,16 @@ export default function HistoryPage() {
                 throw new Error(errorMessage);
             }
 
-            const data: HistoryLog[] = await res.json();
-            setLogs(data);
+            const data = await res.json();
+            // The API now returns { logs: [], pagination: {} }
+            if (data.logs && data.pagination) {
+                setLogs(data.logs);
+                setPagination(data.pagination);
+                setCurrentPage(data.pagination.page);
+            } else {
+                // Fallback for old API format if it still exists elsewhere
+                setLogs(Array.isArray(data) ? data : []);
+            }
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to load history.";
@@ -109,34 +125,7 @@ export default function HistoryPage() {
 
                 const isGlobalAdmin = role === "admin" || email === MASTER_ADMIN_EMAIL;
 
-                // Permission Check
-                // 1. Regular User: Can view own history (no params OR userId matches own id).
-                // 2. Admin: Can view own history OR use admin scopes.
-
-                // Check if user is viewing their own history explicitly via param
-                const isTargetingSelf = targetUserId && id && (parseInt(targetUserId) === id);
-
-                // "Own History" means: (No targetUserId AND scope!=all) OR (targetUserId matches own ID)
-                const isViewingOwnHistory = (!targetUserId && scope !== 'all') || isTargetingSelf;
-
-                const isViewingAdminScope = (targetUserId || scope === 'all') && isGlobalAdmin;
-
-                // Allow access if: (User/Admin viewing own history) OR (Admin viewing admin scope)
-                // Note: isViewingAdminScope will be true if Admin views themselves via ID, so redundancy is fine.
-                const canAccess = isViewingOwnHistory || isViewingAdminScope;
-
-                if (!canAccess) {
-                    // Redirect non-admins trying to access admin scopes, or blocked admins
-                    console.error("Access Denied: Attempted unauthorized access to history scope.", {
-                        role,
-                        email,
-                        myId: id,
-                        targetUserId,
-                        scope,
-                        isGlobalAdmin,
-                        isViewingOwnHistory,
-                        isViewingAdminScope
-                    });
+                if (!isGlobalAdmin) {
                     router.replace("/user_dashboard");
                     return;
                 }
@@ -319,7 +308,7 @@ export default function HistoryPage() {
                                             <div className={styles.imageThumbContainer}>
                                                 {log.gradCamImages.map((img, idx) => {
                                                     const imgUrl = typeof img === 'string' && img.trim() !== ''
-                                                        ? (img.startsWith('http') ? img : `http://127.0.0.1:8000/${img}`)
+                                                        ? (img.startsWith('http') ? img : `/${img}`)
                                                         : null;
                                                     return imgUrl ? (
                                                         <img
@@ -362,8 +351,31 @@ export default function HistoryPage() {
                             ))}
                         </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    <div className={styles.pagination}>
+                        <div className={styles.paginationInfo}>
+                            Showing <strong>{logs.length}</strong> of <strong>{pagination.totalCount}</strong> records | Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong>
+                        </div>
+                        <div className={styles.paginationControls}>
+                            <button 
+                                className={styles.pageButton} 
+                                onClick={() => fetchHistoryData(currentUserRole!, currentUserEmail, currentPage - 1)}
+                                disabled={currentPage <= 1 || loading}
+                            >
+                                Previous
+                            </button>
+                            <button 
+                                className={`${styles.pageButton} ${styles.primary}`}
+                                onClick={() => fetchHistoryData(currentUserRole!, currentUserEmail, currentPage + 1)}
+                                disabled={currentPage >= pagination.totalPages || loading}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
     );
-}
+}

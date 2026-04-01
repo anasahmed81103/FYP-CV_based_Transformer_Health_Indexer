@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +43,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _dateController.text = DateFormat('yyyy-MM-dd').format(now);
     _timeController.text = DateFormat('HH:mm').format(now);
     _getCurrentLocation();
+    _checkRole();
+  }
+
+  bool _isAdmin = false;
+
+  Future<void> _checkRole() async {
+    try {
+      final roleData = await ApiService.getUserRole();
+      final role = roleData['role'];
+      final email = roleData['email'];
+      const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
+      if (mounted) {
+        setState(() {
+          _isAdmin = role == "admin" || email == MASTER_ADMIN_EMAIL;
+        });
+      }
+    } catch (e) {
+      debugPrint("Failed to fetch role: $e");
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -185,16 +204,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: const Color(0xFF0F172A),
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Navigator.pushNamed(context, '/history'),
-            tooltip: 'History',
-          ),
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () => Navigator.pushNamed(context, '/admin'),
-            tooltip: 'Admin',
-          ),
+          if (_isAdmin) ...[
+            IconButton(
+              icon: const Icon(Icons.history),
+              onPressed: () => Navigator.pushNamed(context, '/history'),
+              tooltip: 'History',
+            ),
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              onPressed: () => Navigator.pushNamed(context, '/admin'),
+              tooltip: 'Admin',
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {

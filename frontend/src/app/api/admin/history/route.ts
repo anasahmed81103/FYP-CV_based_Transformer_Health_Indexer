@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { eq, or } from "drizzle-orm"; // Import 'or' for filtering, if needed later
+import { eq, or, sql } from "drizzle-orm"; // Import 'or' for filtering, if needed later
 
 // FIX: Corrected import path (4 levels up from route.ts)
 import { db } from "../../../../../db";
@@ -69,13 +69,36 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Missing required scope or userId parameter for admin history route." }, { status: 400 });
         }
 
-        // --- 3. FETCH DATA ---
-        const logs = await db.query.analysisLogs.findMany({
+        // --- 3. EXTRACT PAGINATION & FETCH DATA ---
+        const page = parseInt(searchParams.get("page") || "1");
+        const limit = parseInt(searchParams.get("limit") || "10");
+        const offset = (page - 1) * limit;
+
+        const logsPromise = db.query.analysisLogs.findMany({
             where: whereClause,
             orderBy: (logs, { desc }) => [desc(logs.createdAt)],
+            limit: limit,
+            offset: offset,
         });
 
-        return NextResponse.json(logs, { status: 200 });
+        // Get total count for pagination metadata
+        const countQuery = whereClause 
+            ? db.execute(sql`SELECT count(*) FROM analysis_logs WHERE ${whereClause}`)
+            : db.execute(sql`SELECT count(*) FROM analysis_logs`);
+
+        const [logs, countResult] = await Promise.all([logsPromise, countQuery]);
+        const totalCount = parseInt((countResult.rows[0] as any).count);
+
+        return NextResponse.json({
+            logs,
+            pagination: {
+                totalCount,
+                page,
+                limit,
+                totalPages: Math.ceil(totalCount / limit),
+                hasMore: offset + logs.length < totalCount
+            }
+        }, { status: 200 });
 
     } catch (err) {
         console.error("Error fetching admin history:", err);
