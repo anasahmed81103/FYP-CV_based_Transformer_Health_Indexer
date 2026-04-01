@@ -77,6 +77,7 @@ export default function AdminPage() {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null); // Added for Master Admin check
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [hasShownPopup, setHasShownPopup] = useState(false);
 
   // --- HOOKS FOR DYNAMIC DATA (MOVED UP) ---
   const [users, setUsers] = useState<UserData[]>([]);
@@ -149,6 +150,15 @@ export default function AdminPage() {
   }, [router]);
 
 
+  const isMasterAdmin = currentUserEmail === MASTER_ADMIN_EMAIL;
+
+  useEffect(() => {
+    if (!isAuthLoading && currentUserRole === 'admin' && !isMasterAdmin && !hasShownPopup) {
+      alert("You can only see this page and individual history button but cant change roles.");
+      setHasShownPopup(true);
+    }
+  }, [isAuthLoading, currentUserRole, isMasterAdmin, hasShownPopup]);
+
   // --- Access Denied / Loading Handlers ---
   if (isAuthLoading || currentUserRole === null) {
     return <div className={styles.loadingContainer}>Checking Authorization...</div>;
@@ -166,9 +176,19 @@ export default function AdminPage() {
 
   // --- HANDLER FUNCTIONS (MODIFIED TO CALL API) ---
   const handleToggleRole = async (userId: number) => {
+    if (!isMasterAdmin) {
+      alert("You are not authorized to change roles. Only Master Admin can do this.");
+      return;
+    }
+
     // ... (logic remains the same)
     const userToUpdate = users.find(user => user.id === userId);
     if (!userToUpdate) return;
+
+    if (userToUpdate.email === MASTER_ADMIN_EMAIL) {
+      alert("Master Admin role is fixed and cannot be changed.");
+      return;
+    }
 
     const currentRole = userToUpdate.role.toLowerCase();
     const targetRole = currentRole === 'admin' ? 'user' : 'admin';
@@ -194,9 +214,19 @@ export default function AdminPage() {
   };
 
   const handleToggleStatus = async (userId: number) => {
+    if (!isMasterAdmin) {
+      alert("You are not authorized to change status. Only Master Admin can do this.");
+      return;
+    }
+
     // ... (logic remains the same)
     const userToUpdate = users.find(user => user.id === userId);
     if (!userToUpdate) return;
+
+    if (userToUpdate.email === MASTER_ADMIN_EMAIL) {
+      alert("Master Admin status is fixed and cannot be changed.");
+      return;
+    }
 
     const currentStatus = userToUpdate.status.toLowerCase();
     const targetRole = currentStatus === 'active' ? 'suspended' : 'user';
@@ -234,6 +264,10 @@ export default function AdminPage() {
 
   const handleAddAdmin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!isMasterAdmin) {
+      alert("Only Master Admin can grant admin access.");
+      return;
+    }
     if (newAdminEmail.trim() === "") {
       alert("Please enter a valid email address.");
       return;
@@ -241,8 +275,6 @@ export default function AdminPage() {
     console.log(`Attempting to grant admin access to ${newAdminEmail}`);
     setNewAdminEmail("");
   };
-
-  const isMasterAdmin = currentUserEmail === MASTER_ADMIN_EMAIL;
 
   // --- FINAL RENDER ---
   return (

@@ -150,20 +150,19 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> getHistory() async {
+  static Future<Map<String, dynamic>> getHistory({int page = 1, int limit = 10}) async {
     try {
       if (kDebugMode) {
-        print('Fetching history with token: $_authToken');
+        print('Fetching history with token: $_authToken, page: $page');
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/history'),
+        Uri.parse('$baseUrl/history?page=$page&limit=$limit'),
         headers: _headers,
       );
 
       if (kDebugMode) {
         print('History response status: ${response.statusCode}');
-        print('History response body: ${response.body}');
       }
 
       if (response.statusCode == 200) {

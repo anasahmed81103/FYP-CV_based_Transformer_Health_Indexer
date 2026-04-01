@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // FIX: Corrected import path (4 levels up from route.ts)
 import { db } from "../../../../db";
@@ -32,13 +32,36 @@ export async function GET(req: Request) {
         const decoded = jwt.verify(token, secret) as { id: number, role: string };
         const userId = decoded.id;
 
+        // --- Extract Pagination and Scope Query Params ---
+        const { searchParams } = new URL(req.url);
+        const page = parseInt(searchParams.get("page") || "1");
+        const limit = parseInt(searchParams.get("limit") || "10");
+        const offset = (page - 1) * limit;
+
         // Fetch logs only for the current user
-        const logs = await db.query.analysisLogs.findMany({
+        const logsPromise = db.query.analysisLogs.findMany({
             where: eq(analysisLogs.userId, userId),
             orderBy: (logs, { desc }) => [desc(logs.createdAt)],
+            limit: limit,
+            offset: offset,
         });
 
-        return NextResponse.json(logs, { status: 200 });
+        // Get total count for pagination metadata
+        const countPromise = db.execute(sql`SELECT count(*) FROM analysis_logs WHERE user_id = ${userId}`);
+
+        const [logs, countResult] = await Promise.all([logsPromise, countPromise]);
+        const totalCount = parseInt((countResult.rows[0] as any).count);
+
+        return NextResponse.json({
+            logs,
+            pagination: {
+                totalCount,
+                page,
+                limit,
+                totalPages: Math.ceil(totalCount / limit),
+                hasMore: offset + logs.length < totalCount
+            }
+        }, { status: 200 });
     } catch (err) {
         console.error("Error fetching history:", err);
         // Handle potential JWT errors (invalid token) as unauthorized
