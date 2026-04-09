@@ -1,0 +1,86 @@
+[
+  {
+    "transformer_id": "tr401",
+    "timestamp": "2026-04-10 03:49:48.350762",
+    "adjustments": [
+      {
+        "parameter": "Oil leakage",
+        "original": 1.0518985986709595,
+        "corrected": 1.0518985986709595,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Corrosion",
+        "original": 3.026819944381714,
+        "corrected": 3.026819944381714,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Rust",
+        "original": 3.097485065460205,
+        "corrected": 6,
+        "difference": 2.902514934539795
+      },
+      {
+        "parameter": "Paint fading",
+        "original": 3.1468002796173096,
+        "corrected": 3.1468002796173096,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Bushing cracks",
+        "original": 3.0647342205047607,
+        "corrected": 3.0647342205047607,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Broken connectors",
+        "original": 5.05586576461792,
+        "corrected": 3,
+        "difference": -2.05586576461792
+      },
+      {
+        "parameter": "Insulator contamination",
+        "original": 3.0881574153900146,
+        "corrected": 3.0881574153900146,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Burnt marks / overheating",
+        "original": 0.955032467842102,
+        "corrected": 0.955032467842102,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Deformed tank / bent fins",
+        "original": 3.0043375492095947,
+        "corrected": 3.0043375492095947,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Loose or unsafe wiring",
+        "original": 0.9361249804496765,
+        "corrected": 0.9361249804496765,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Dust accumulation",
+        "original": 0.9838153719902039,
+        "corrected": 0.9838153719902039,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Gasket leakage",
+        "original": 1.0202956199645996,
+        "corrected": 1.0202956199645996,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Damaged or bent pole structure",
+        "original": 6,
+        "corrected": 2,
+        "difference": -4
+      }
+    ]
+  }
+]
