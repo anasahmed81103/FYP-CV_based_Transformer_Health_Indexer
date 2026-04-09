@@ -722,6 +722,80 @@
     /* Ensure the whole heatmap is visible */
 }
 
+
+/* --- Editable Parameters --- */
+.editableParameters {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.editableParameters h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.parameterRow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.parameterRow label {
+    font-weight: 500;
+    color: #ffffff;
+    flex: 1;
+}
+
+.parameterRow input {
+    width: 60px; /* slightly bigger than 50px */
+    padding: 0.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.4);
+    color: #ffffff;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.parameterRow input:focus {
+    outline: none;
+    border-color: #2dd4bf;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Submit button */
+.submitCorrectionsBtn {
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+}
+
+.submitCorrectionsBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
+}
+
+
+
+
 /* ========================================
    MOBILE RESPONSIVE STYLES (Adjusted Parameter Grid)
    ======================================== */
