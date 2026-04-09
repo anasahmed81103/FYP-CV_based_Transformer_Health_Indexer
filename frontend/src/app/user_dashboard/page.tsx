@@ -122,6 +122,10 @@ export default function UserDashboard() {
     nonPmtImages: string[];
   } | null>(null);
 
+  // --- Editable Parameters ---
+  const [editableParameters, setEditableParameters] = useState<Parameter[] | null>(null);
+
+
   // --- Transformer Selector State ---
   const [existingTransformers, setExistingTransformers] = useState<{ transformerId: string; location: string }[]>([]);
   const [isLoadingTransformers, setIsLoadingTransformers] = useState(false);
@@ -488,6 +492,12 @@ export default function UserDashboard() {
         nonPmtImages: nonPmt,
       });
 
+      // Initialize editable parameters with current scores
+      setEditableParameters(
+        processedParameters.map(p => ({ ...p })) // shallow copy
+      );
+
+
     } catch (err: any) {
       console.error('Analysis failed:', err);
       alert('Failed to analyze transformer images. Check backend server and console logs.');
@@ -537,6 +547,57 @@ export default function UserDashboard() {
       setPendingAnalysis(false);
     }
   };
+
+  const handleSubmitCorrections = async () => {
+    if (!editableParameters || editableParameters.length === 0) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('transformer_id', transformerId);
+      formData.append('original_scores', JSON.stringify(analysisResult?.allParameters || []));
+      formData.append('corrected_scores', JSON.stringify(editableParameters));
+
+      // Append the original images used in analysis
+      images.forEach(img => formData.append('files', img));
+
+      const res = await fetch('/api/submit-corrections', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) throw new Error('Failed to submit corrections');
+
+      const data = await res.json();
+
+      console.log("Corrections response:", data);
+
+      // ✅ STEP 1: Update UI with corrected values
+      setAnalysisResult(prev => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          allParameters: editableParameters.map(p => ({
+            ...p,
+            requiredAction: getRequiredAction(p.name, Math.round(p.score)),
+          }))
+        };
+      });
+
+      // ✅ STEP 2: Also sync editable state (optional but cleaner)
+      setEditableParameters(prev =>
+        prev ? prev.map(p => ({ ...p })) : prev
+      );
+
+      alert('✅ Corrected scores applied successfully!');
+
+    } catch (err) {
+      console.error(err);
+      alert('❌ Error submitting corrected scores.');
+    }
+  };
+
+
 
   // --- RENDER ---
   return (
@@ -979,6 +1040,43 @@ export default function UserDashboard() {
                 ))}
               </ul>
             </div>
+
+
+            {/* Editing the parameters /  user feedback */}
+            {editableParameters && (
+              <div className={styles.editableParameters}>
+                <h3>Optional Parameter Corrections</h3>
+                {editableParameters.map((param, idx) => (
+                  <div key={param.name} className={styles.parameterRow}>
+                    <label>{param.name}</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={6}
+                      value={param.score}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(6, Number(e.target.value)));
+                        setEditableParameters(prev => {
+                          if (!prev) return prev;
+                          const newArr = [...prev];
+                          newArr[idx] = { ...newArr[idx], score: val };
+                          return newArr;
+                        });
+                      }}
+                    />
+                  </div>
+                ))}
+                <button
+                  className={styles.submitCorrectionsBtn}
+                  onClick={handleSubmitCorrections}
+                >
+                  Submit Corrected Scores
+                </button>
+              </div>
+            )}
+
+    
+
           </>
         ) : <div className={styles.placeholder}>No analysis yet. Fill the form and upload images to begin.</div>}
       </div>
