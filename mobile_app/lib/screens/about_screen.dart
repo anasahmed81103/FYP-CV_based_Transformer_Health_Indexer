@@ -35,7 +35,7 @@ class AboutScreen extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                   ),
                   title: const Text(
-                    'Architecture & Pipeline',
+                    'How It Works',
                     style: TextStyle(
                         fontWeight: FontWeight.bold, color: Colors.white),
                   ),
@@ -99,6 +99,14 @@ class AboutScreen extends StatelessWidget {
                         desc:
                             'All parameter scores, health percentages, uploaded images, heatmaps, and textual technician feedback are permanently encrypted and archived within our local PostgreSQL data lake.',
                       ),
+                      _buildArrow(),
+                      _buildPipelineStep(
+                        icon: Icons.people_alt,
+                        color: Colors.pinkAccent,
+                        title: '6. Human-in-the-Loop & RL',
+                        desc:
+                            'Through the User Dashboard, master technicians can override AI predictions via score correction forms. These verified human inputs are fed back into our Reinforcement Learning Continuous Pipeline, dynamically retraining the core EfficientNet model over time to adapt to novel defect patterns and edge cases.',
+                      ),
 
                       const SizedBox(height: 48),
                       const Divider(color: Colors.white24, thickness: 1),
@@ -111,8 +119,8 @@ class AboutScreen extends StatelessWidget {
                       Text(
                         'The History Module securely records every inspection footprint across the timeline. It natively stores:\n\n'
                         '• Raw uploaded field imagery & AI generated Grad-CAM heatmaps\n'
-                        '• Extracted Geo-location data & specific evaluation timestamps\n'
-                        '• Concrete Health Index predictions (Percentage %)\n'
+                        '• AI-calculated Health Index percentages & Expert Corrected Scores\n'
+                        '• Smart Interactive Maps with GPS location verification & timestamps\n'
                         '• Synchronized technician manual feedback & voice-processed textual notes',
                         style: TextStyle(
                             color: Colors.grey[400], height: 1.6, fontSize: 15),

@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../models/analysis_result.dart';
 import 'map_screen.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'dart:ui' as ui;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -47,16 +48,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   bool _isAdmin = false;
+  String _guideLanguage = 'en';
 
   Future<void> _checkRole() async {
     try {
       final roleData = await ApiService.getUserRole();
       final role = roleData['role'];
       final email = roleData['email'];
-      const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
+      const masterAdminEmail = "junaidasif956@gmail.com";
       if (mounted) {
         setState(() {
-          _isAdmin = role == "admin" || email == MASTER_ADMIN_EMAIL;
+          _isAdmin = role == "admin" || email == masterAdminEmail;
         });
       }
     } catch (e) {
@@ -77,11 +79,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permissions denied.')));
+        }
         return;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Location permissions permanently denied.')));
+      }
       return;
     }
 
@@ -89,8 +99,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Attempt Reverse Geocoding via Nominatim
     try {
-      final response = await http.get(Uri.parse(
-          'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.latitude}&lon=${position.longitude}'));
+      final response = await http.get(
+        Uri.parse('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.latitude}&lon=${position.longitude}'),
+        headers: {'User-Agent': 'TransformerHealthApp/1.0'},
+      );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['display_name'] != null) {
@@ -196,6 +208,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  void _showGuideDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final isUrdu = _guideLanguage == 'ur';
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1E293B),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.menu_book, color: Color(0xFF6366F1)),
+                      const SizedBox(width: 8),
+                      Text(isUrdu ? 'صارف گائیڈ' : 'User Guide', style: const TextStyle(color: Colors.white, fontSize: 18)),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setStateDialog(() {
+                        _guideLanguage = isUrdu ? 'en' : 'ur';
+                      });
+                    },
+                    style: TextButton.styleFrom(backgroundColor: const Color(0xFF4F46E5), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    child: Text(isUrdu ? 'Read in English' : 'اردو میں پڑھیں', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Directionality(
+                  textDirection: isUrdu ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: isUrdu ? const [
+                      Text('1. فارم بھرنا', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('ٹرانسفارمر کی آئی ڈی درج کریں (یا موجودہ منتخب کریں)، مقام، تاریخ اور وقت کی تصدیق کریں۔ ٹرانسفارمر کے حصوں کی واضح تصاویر اپ لوڈ کریں۔', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      SizedBox(height: 12),
+                      Text('2. تجزیاتی نوٹس (فیڈبیک) فراہم کرنا', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('\'تجزیاتی نوٹس شامل کریں\' پر کلک کریں اور کوئی بھی دستی مشاہدہ، دیکھ بھال کا نوٹ یا مخصوص حالات ٹائپ کریں یا بول کر بتائیں جس کا AI کو علم ہونا چاہیے۔ یہ آپ کے معائنے کے لیے اضافی سیاق و سباق کے طور پر کام کرتا ہے۔', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      SizedBox(height: 12),
+                      Text('3. پیرامیٹر کی اصلاحات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('جب AI تجزیہ مکمل ہو جائے، تو آپ کو پیش گوئی شدہ نقص کا اسکور نظر آئے گا۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو آپ ویب پورٹل میں اقدار میں تبدیلی کر سکتے ہیں تاکہ آپ کے ماہرانہ فیصلے کے مطابق نتائج فوری طور پر اپ ڈیٹ ہو جائیں۔', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    ] : const [
+                      Text('1. Filling the Form', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('Enter the Transformer ID (or select an existing one), verify the location, date, and time. Upload clear images of the transformer.', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      SizedBox(height: 12),
+                      Text('2. Providing Feedback Notes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('Tap the chat icon next to "Add Analysis Notes" to type or speak any manual observations. This provides context for the AI.', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      SizedBox(height: 12),
+                      Text('3. Parameter Corrections', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('After analysis, review the predicted scores. If you feel the model’s prediction is incorrect, you can manipulate the values in the web portal to instantly update the results according to your expert judgment.', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(isUrdu ? 'بند کریں' : 'Close', style: const TextStyle(color: Color(0xFF6366F1))),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,6 +305,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               tooltip: 'Admin',
             ),
           ],
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: _showGuideDialog,
+            tooltip: 'Guide',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -544,6 +638,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style:
                 GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
+
+        Directionality(
+          textDirection: _guideLanguage == 'ur' ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF38BDF8).withValues(alpha: 0.1),
+              border: Border(
+                left: _guideLanguage == 'en' ? const BorderSide(color: Color(0xFF38BDF8), width: 4) : BorderSide.none,
+                right: _guideLanguage == 'ur' ? const BorderSide(color: Color(0xFF38BDF8), width: 4) : BorderSide.none,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.menu_book, color: Color(0xFF38BDF8), size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          _guideLanguage == 'ur' ? 'فوری گائیڈ: اسکور کی اصلاحات' : 'Quick Guide: Score Corrections',
+                          style: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _guideLanguage = _guideLanguage == 'en' ? 'ur' : 'en';
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF38BDF8)),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _guideLanguage == 'en' ? 'اردو' : 'English',
+                          style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _guideLanguage == 'ur' 
+                  ? 'نیچے دیے گئے پیرامیٹر کے اسکورز کا جائزہ لیں۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو آپ ویب پورٹل میں اصلاحات کے سیکشن کا استعمال کرتے ہوئے پیش گوئی کی گئی اقدار کو دستی طور پر تبدیل کر سکتے ہیں۔ نتائج فوری طور پر آپ کے فیڈبیک کی بنیاد پر اپ ڈیٹ ہو جائیں گے۔' 
+                  : 'Review the parameter scores below. If you believe the model\'s prediction is inaccurate, you can manipulate the predicted values manually using the Corrections section in the web portal. The results will instantly update based on your expert feedback.',
+                  style: const TextStyle(color: Color(0xFFE0F2FE), fontSize: 13, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ),
 
         // GradCAM
         if (result.gradCamImages.isNotEmpty) ...[

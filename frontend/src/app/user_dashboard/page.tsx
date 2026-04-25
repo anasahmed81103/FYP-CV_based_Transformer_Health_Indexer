@@ -21,6 +21,7 @@ import {
   FaWrench,
   FaMicrophone,
   FaCommentDots,
+  FaBookOpen,
 } from 'react-icons/fa';
 
 const MapModal = dynamic(() => import('@/app/components/MapModal'), { ssr: false });
@@ -138,6 +139,8 @@ export default function UserDashboard() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationScore, setVerificationScore] = useState(0);
   const [pendingAnalysis, setPendingAnalysis] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideLanguage, setGuideLanguage] = useState<'en' | 'ur'>('en');
 
   // Load state from sessionStorage and global cache on mount
   useEffect(() => {
@@ -603,6 +606,7 @@ export default function UserDashboard() {
   return (
     <div className={styles.container}>
       <div className={styles.adminButtons}>
+        <button onClick={() => setShowGuide(true)} className={styles.adminButton}><FaBookOpen size={16} /><span>Guide</span></button>
         {canAccessAdminTools && (
           <>
             <Link href="/user_history" className={styles.historyButton}><FaHistory size={16} /><span>History</span></Link>
@@ -774,6 +778,57 @@ export default function UserDashboard() {
             </div>
           )}
 
+          {/* Guide Modal */}
+          {showGuide && (
+            <div className={styles.locationPopupOverlay}>
+              <div className={styles.locationPopup} style={{ maxWidth: '600px', textAlign: guideLanguage === 'ur' ? 'right' : 'left', maxHeight: '80vh', overflowY: 'auto', direction: guideLanguage === 'ur' ? 'rtl' : 'ltr' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 style={{ color: '#38bdf8', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FaBookOpen /> {guideLanguage === 'en' ? 'User Guide' : 'صارف گائیڈ'}
+                  </h3>
+                  <button 
+                    onClick={() => setGuideLanguage(guideLanguage === 'en' ? 'ur' : 'en')}
+                    style={{ padding: '4px 12px', borderRadius: '4px', backgroundColor: '#4f46e5', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                  >
+                    {guideLanguage === 'en' ? 'اردو میں پڑھیں' : 'Read in English'}
+                  </button>
+                </div>
+                
+                {guideLanguage === 'en' ? (
+                  <div style={{ color: '#d1d5db', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>1. Filling the Form</h4>
+                    <p style={{ marginBottom: '1rem' }}>Enter the Transformer ID (or select an existing one), verify the location, and confirm the date and time. Upload clear images of the transformer components.</p>
+                    
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>2. Providing Analysis Notes (Feedback)</h4>
+                    <p style={{ marginBottom: '1rem' }}>Click the "Add Analysis Notes" button to type or speak any manual observations, maintenance notes, or specific conditions that the AI should be aware of. This acts as additional context for your inspection.</p>
+                    
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>3. Parameter Corrections</h4>
+                    <p>When the AI analysis is complete, you will see the predicted defect scores. If you believe the model predicted incorrectly, you can <strong>manipulate the values</strong> in the "Optional Parameter Corrections" section at the bottom.</p>
+                    <p>Adjust the scores and click <strong>"Submit Corrected Scores"</strong>. The results and required actions will immediately update to reflect your expert judgment.</p>
+                  </div>
+                ) : (
+                  <div style={{ color: '#d1d5db', fontSize: '1.0rem', lineHeight: '1.8', fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu, Arial' }}>
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>1. فارم بھرنا</h4>
+                    <p style={{ marginBottom: '1rem' }}>ٹرانسفارمر کی آئی ڈی درج کریں (یا موجودہ منتخب کریں)، مقام، تاریخ اور وقت کی تصدیق کریں۔ ٹرانسفارمر کے حصوں کی واضح تصاویر اپ لوڈ کریں۔</p>
+                    
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>2. تجزیاتی نوٹس (فیڈبیک) فراہم کرنا</h4>
+                    <p style={{ marginBottom: '1rem' }}>'تجزیاتی نوٹس شامل کریں' پر کلک کریں اور کوئی بھی دستی مشاہدہ، دیکھ بھال کا نوٹ یا مخصوص حالات ٹائپ کریں یا بول کر بتائیں جس کا AI کو علم ہونا چاہیے۔ یہ آپ کے معائنے کے لیے اضافی سیاق و سباق کے طور پر کام کرتا ہے۔</p>
+                    
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>3. پیرامیٹر کی اصلاحات</h4>
+                    <p>جب AI تجزیہ مکمل ہو جائے، تو آپ کو پیش گوئی شدہ نقص کا اسکور نظر آئے گا۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو آپ نیچے <strong>'اختیاری پیرامیٹر کی اصلاحات'</strong> سیکشن میں اقدار میں تبدیلی کر سکتے ہیں۔</p>
+                    <p>اسکورز کو درست کریں اور <strong>'درست شدہ اسکور جمع کریں'</strong> پر کلک کریں۔ نتائج اور مطلوبہ اقدامات آپ کے ماہرانہ فیڈبیک کے مطابق فوری طور پر اپ ڈیٹ ہو جائیں گے۔</p>
+                  </div>
+                )}
+
+                <div className={styles.popupActions} style={{ marginTop: '1.5rem', justifyContent: 'flex-end', direction: 'ltr' }}>
+                  <button className={styles.allowBtn} onClick={() => setShowGuide(false)} style={{ backgroundColor: '#374151' }}>
+                    {guideLanguage === 'en' ? 'Close Guide' : 'گائیڈ بند کریں'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Verification Confirmation Modal */}
           {showVerificationModal && (
             <div className={styles.locationPopupOverlay}>
@@ -929,6 +984,31 @@ export default function UserDashboard() {
       {/* --- Analysis Results --- */}
       <div className={styles.analysisSection}>
         <h2 className={styles.sectionTitle}>AI Analysis Results</h2>
+
+        {analysisResult && (
+          <div style={{ backgroundColor: 'rgba(56, 189, 248, 0.1)', borderLeft: guideLanguage === 'en' ? '4px solid #38bdf8' : 'none', borderRight: guideLanguage === 'ur' ? '4px solid #38bdf8' : 'none', padding: '12px 16px', borderRadius: '4px', marginBottom: '20px', direction: guideLanguage === 'ur' ? 'rtl' : 'ltr', textAlign: guideLanguage === 'ur' ? 'right' : 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h4 style={{ color: '#38bdf8', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                 <FaBookOpen /> {guideLanguage === 'en' ? 'Quick Guide: Score Corrections' : 'فوری گائیڈ: اسکور کی اصلاحات'}
+              </h4>
+              <button 
+                onClick={() => setGuideLanguage(guideLanguage === 'en' ? 'ur' : 'en')}
+                style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: 'transparent', color: '#38bdf8', border: '1px solid #38bdf8', cursor: 'pointer', fontSize: '0.75rem' }}
+              >
+                {guideLanguage === 'en' ? 'اردو' : 'English'}
+              </button>
+            </div>
+            {guideLanguage === 'en' ? (
+              <p style={{ color: '#e0f2fe', margin: 0, fontSize: '0.9rem', lineHeight: '1.5' }}>
+                Review the parameter scores below. If you believe the model's prediction is inaccurate, scroll down to the <strong>"Optional Parameter Corrections"</strong> section to manipulate the values. Click "Submit Corrected Scores" to instantly update the analysis results based on your expert feedback.
+              </p>
+            ) : (
+              <p style={{ color: '#e0f2fe', margin: 0, fontSize: '0.95rem', lineHeight: '1.6', fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu, Arial' }}>
+                نیچے دیے گئے پیرامیٹر کے اسکورز کا جائزہ لیں۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو اقدار میں تبدیلی کے لیے نیچے <strong>"اختیاری پیرامیٹر کی اصلاحات"</strong> سیکشن پر جائیں۔ اپنے ماہرانہ فیڈبیک کے مطابق تجزیہ کے نتائج کو فوری اپ ڈیٹ کرنے کے لیے "درست شدہ اسکور جمع کریں" پر کلک کریں۔
+              </p>
+            )}
+          </div>
+        )}
 
         {analysisResult?.nonPmtImages && analysisResult.nonPmtImages.length > 0 && (
           <div className={styles.warningBox}>

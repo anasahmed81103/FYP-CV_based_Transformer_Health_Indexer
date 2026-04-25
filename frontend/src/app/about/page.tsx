@@ -17,7 +17,7 @@ export default function About() {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                         <h1 className={styles.title} style={{ fontSize: '2.5rem', textAlign: 'left', margin: 0 }}>
-                            <span className={styles.titleAccent}>Platform</span> Architecture
+                            <span className={styles.titleAccent}>How It</span> Works
                         </h1>
                         <Link href="/" className={styles.btnSecondary} style={{ padding: '10px 20px' }}>
                             Back to Home
@@ -89,6 +89,17 @@ export default function About() {
                                 </div>
                             </div>
 
+                            <div style={arrowStyle}><ArrowRight size={24} color="#6366F1" /></div>
+
+                            {/* Step 6 */}
+                            <div style={stepCardStyle}>
+                                <div style={iconBoxStyle('#ec4899')}><Users size={32} color="#fff" /></div>
+                                <div>
+                                    <h3 style={stepTitleStyle}>6. Human-in-the-Loop & Reinforcement Learning</h3>
+                                    <p style={stepDescStyle}>Through the <strong>User Dashboard</strong>, master technicians can override AI predictions via score correction forms. These verified human inputs are fed back into our <strong>Reinforcement Learning Continuous Pipeline</strong>, dynamically retraining the core EfficientNet model over time to adapt to novel defect patterns and edge cases.</p>
+                                </div>
+                            </div>
+
                         </div>
                     </section>
 
@@ -105,9 +116,9 @@ export default function About() {
                             </p>
                             <ul style={{ color: '#94a3b8', lineHeight: '1.6', marginTop: '10px', paddingLeft: '20px' }}>
                                 <li>Raw uploaded field images & Grad-CAM visual outputs</li>
-                                <li>AI-calculated Health Index percentages</li>
-                                <li>Extracted geo-location data and timestamps</li>
-                                <li>Manual technician feedback and voice-to-text notes</li>
+                                <li>AI-calculated Health Index percentages and Expert Corrected Scores</li>
+                                <li>Smart Interactive Maps with GPS location verification</li>
+                                <li>Manual technician feedback and Voice-to-Text inference notes</li>
                             </ul>
                         </div>
 

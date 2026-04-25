@@ -26,16 +26,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'KE Portal',
+      title: 'FAST Portal',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1), // Indigo-like color
+          seedColor: const Color(0xFF2DD4BF), // Teal matching web
           brightness: Brightness.dark,
-          surface: const Color(0xFF0F172A), // Slate 900
+          surface: const Color(0xFF0C1F14), // Dark greenish slate matching web
         ),
-        scaffoldBackgroundColor: const Color(0xFF020617),
+        scaffoldBackgroundColor: const Color(0xFF0A0A0A), // Very dark background matching web
         textTheme:
             GoogleFonts.interTextTheme(Theme.of(context).textTheme).apply(
           bodyColor: Colors.white,
@@ -43,8 +43,8 @@ class MyApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366F1),
-            foregroundColor: Colors.white,
+            backgroundColor: const Color(0xFF2DD4BF), // Teal
+            foregroundColor: const Color(0xFF0D1A18), // Dark contrast
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1E293B), // Slate 800
+          fillColor: const Color(0xFF1A1A1A), // Darker gray
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,

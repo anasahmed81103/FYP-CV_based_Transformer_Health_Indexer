@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 
@@ -166,10 +166,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               Icon(Icons.email_outlined, color: Colors.grey),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty)
+                          if (value == null || value.isEmpty) {
                             return 'Email is required';
-                          if (!value.contains('@'))
+                          }
+                          if (!value.contains('@')) {
                             return 'Invalid email address';
+                          }
                           return null;
                         },
                       ),
@@ -202,10 +204,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty)
+                          if (value == null || value.isEmpty) {
                             return 'Password is required';
-                          if (value.length < 6)
+                          }
+                          if (value.length < 6) {
                             return 'Password must be at least 6 characters';
+                          }
                           return null;
                         },
                       ),
