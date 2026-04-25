@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 
@@ -198,9 +198,12 @@ class _SignupScreenState extends State<SignupScreen> {
                         decoration: const InputDecoration(
                             hintText: 'john.doe@example.com'),
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Email is required';
-                          if (!v.contains('@')) return 'Invalid email';
+                          }
+                          if (!v.contains('@')) {
+                            return 'Invalid email';
+                          }
                           return null;
                         },
                       ),
@@ -228,9 +231,12 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Password is required';
-                          if (v.length < 8) return 'Min 8 characters';
+                          }
+                          if (v.length < 8) {
+                            return 'Min 8 characters';
+                          }
                           return null;
                         },
                       ),
@@ -259,8 +265,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         validator: (v) {
-                          if (v != _passwordController.text)
+                          if (v != _passwordController.text) {
                             return 'Passwords do not match';
+                          }
                           return null;
                         },
                       ),

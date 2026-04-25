@@ -82,5 +82,173 @@
         "difference": -4
       }
     ]
+  },
+  {
+    "transformer_id": "Tr-8634",
+    "timestamp": "2026-04-13 14:54:42.265565",
+    "adjustments": [
+      {
+        "parameter": "Oil leakage",
+        "original": 3.9522359371185303,
+        "corrected": 3.9522359371185303,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Corrosion",
+        "original": 0.9226728677749634,
+        "corrected": 0.9226728677749634,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Rust",
+        "original": 0.9283077120780945,
+        "corrected": 0.9283077120780945,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Paint fading",
+        "original": 0.9511774778366089,
+        "corrected": 0.9511774778366089,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Bushing cracks",
+        "original": 3.0110561847686768,
+        "corrected": 3.0110561847686768,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Broken connectors",
+        "original": 3.158071517944336,
+        "corrected": 3.158071517944336,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Insulator contamination",
+        "original": 3.1310203075408936,
+        "corrected": 3.1310203075408936,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Burnt marks / overheating",
+        "original": 0.9725316166877747,
+        "corrected": 0.9725316166877747,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Deformed tank / bent fins",
+        "original": 0.9285016059875488,
+        "corrected": 0.9285016059875488,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Loose or unsafe wiring",
+        "original": 3.84621000289917,
+        "corrected": 3.84621000289917,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Dust accumulation",
+        "original": 2.0040788650512695,
+        "corrected": 2.0040788650512695,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Gasket leakage",
+        "original": 4.161202907562256,
+        "corrected": 2.3,
+        "difference": -1.861202907562256
+      },
+      {
+        "parameter": "Damaged or bent pole structure",
+        "original": 0.9464757442474365,
+        "corrected": 0.9464757442474365,
+        "difference": 0.0
+      }
+    ]
+  },
+  {
+    "transformer_id": "Tr-8634",
+    "timestamp": "2026-04-13 14:54:43.090825",
+    "adjustments": [
+      {
+        "parameter": "Oil leakage",
+        "original": 3.9522359371185303,
+        "corrected": 3.9522359371185303,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Corrosion",
+        "original": 0.9226728677749634,
+        "corrected": 0.9226728677749634,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Rust",
+        "original": 0.9283077120780945,
+        "corrected": 0.9283077120780945,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Paint fading",
+        "original": 0.9511774778366089,
+        "corrected": 0.9511774778366089,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Bushing cracks",
+        "original": 3.0110561847686768,
+        "corrected": 3.0110561847686768,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Broken connectors",
+        "original": 3.158071517944336,
+        "corrected": 3.158071517944336,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Insulator contamination",
+        "original": 3.1310203075408936,
+        "corrected": 3.1310203075408936,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Burnt marks / overheating",
+        "original": 0.9725316166877747,
+        "corrected": 0.9725316166877747,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Deformed tank / bent fins",
+        "original": 0.9285016059875488,
+        "corrected": 0.9285016059875488,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Loose or unsafe wiring",
+        "original": 3.84621000289917,
+        "corrected": 3.84621000289917,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Dust accumulation",
+        "original": 2.0040788650512695,
+        "corrected": 2.0040788650512695,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Gasket leakage",
+        "original": 4.161202907562256,
+        "corrected": 2.3,
+        "difference": -1.861202907562256
+      },
+      {
+        "parameter": "Damaged or bent pole structure",
+        "original": 0.9464757442474365,
+        "corrected": 0.9464757442474365,
+        "difference": 0.0
+      }
+    ]
   }
 ]

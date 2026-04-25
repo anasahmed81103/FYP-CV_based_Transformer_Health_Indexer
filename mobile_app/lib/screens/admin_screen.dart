@@ -16,7 +16,7 @@ class _AdminScreenState extends State<AdminScreen> {
   String? _currentUserRole;
   String? _currentUserEmail;
   bool _hasShownPopup = false;
-  static const String MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
+  static const String masterAdminEmail = "junaidasif956@gmail.com";
 
   @override
   void initState() {
@@ -30,8 +30,8 @@ class _AdminScreenState extends State<AdminScreen> {
       final role = roleData['role'];
       final email = roleData['email'];
       
-      const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
-      bool isGlobalAdmin = role == "admin" || email == MASTER_ADMIN_EMAIL;
+      const masterAdminEmail = "junaidasif956@gmail.com";
+      bool isGlobalAdmin = role == "admin" || email == masterAdminEmail;
       
       if (!isGlobalAdmin) {
         if (mounted) {
@@ -52,7 +52,7 @@ class _AdminScreenState extends State<AdminScreen> {
           _isLoading = false;
         });
 
-        bool isMasterAdmin = _currentUserEmail == MASTER_ADMIN_EMAIL;
+        bool isMasterAdmin = _currentUserEmail == masterAdminEmail;
         if (!isMasterAdmin && _currentUserRole == 'admin' && !_hasShownPopup) {
           _hasShownPopup = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -133,7 +133,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               ],
                             ),
                             onTap: () {
-                              bool isMasterAdmin = _currentUserEmail == MASTER_ADMIN_EMAIL;
+                              bool isMasterAdmin = _currentUserEmail == masterAdminEmail;
 
                               // Mobile layout check or default admin logic
                               if (!isMasterAdmin) {
@@ -143,7 +143,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 return;
                               }
 
-                              if (user['email'] == MASTER_ADMIN_EMAIL) {
+                              if (user['email'] == masterAdminEmail) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Master Admin role is fixed and cannot be changed.')),
                                 );

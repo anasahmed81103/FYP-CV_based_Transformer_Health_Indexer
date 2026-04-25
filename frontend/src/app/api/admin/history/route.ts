@@ -83,11 +83,11 @@ export async function GET(req: Request) {
 
         // Get total count for pagination metadata
         const countQuery = whereClause 
-            ? db.execute(sql`SELECT count(*) FROM analysis_logs WHERE ${whereClause}`)
-            : db.execute(sql`SELECT count(*) FROM analysis_logs`);
+            ? db.select({ count: sql<number>`count(*)` }).from(analysisLogs).where(whereClause)
+            : db.select({ count: sql<number>`count(*)` }).from(analysisLogs);
 
         const [logs, countResult] = await Promise.all([logsPromise, countQuery]);
-        const totalCount = parseInt((countResult.rows[0] as any).count);
+        const totalCount = Number(countResult[0]?.count || 0);
 
         return NextResponse.json({
             logs,
