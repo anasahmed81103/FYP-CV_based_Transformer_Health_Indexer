@@ -17,7 +17,7 @@ interface HistoryLog {
     inferenceDate: string;
     inferenceTime: string;
     healthIndexScore: number;
-    paramsScores: Record<string, number>;
+    paramsScores: Record<string, any>;
     providedImages?: string[];
     gradCamImages?: string[];
     status: 'Healthy' | 'Moderate' | 'Critical';
@@ -255,7 +255,24 @@ export default function HistoryPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredLogs.map((log) => (
+                            {filteredLogs.map((log) => {
+                                let gradCams: any[] = [];
+                                if (Array.isArray(log.gradCamImages)) {
+                                    gradCams = log.gradCamImages;
+                                } else if (typeof log.gradCamImages === 'string') {
+                                    try { gradCams = JSON.parse(log.gradCamImages); } catch(e) { gradCams = [log.gradCamImages]; }
+                                }
+                                if (!Array.isArray(gradCams)) gradCams = [];
+
+                                let providedImgs: any[] = [];
+                                if (Array.isArray(log.providedImages)) {
+                                    providedImgs = log.providedImages;
+                                } else if (typeof log.providedImages === 'string') {
+                                    try { providedImgs = JSON.parse(log.providedImages); } catch(e) { providedImgs = [log.providedImages]; }
+                                }
+                                if (!Array.isArray(providedImgs)) providedImgs = [];
+
+                                return (
                                 <tr key={log.id}>
                                     <td>{log.transformerId}</td>
                                     <td className={styles.locationCell}>{log.location}</td>
@@ -284,9 +301,9 @@ export default function HistoryPage() {
                                         </span>
                                     </td>
                                     <td>
-                                        {log.providedImages && Array.isArray(log.providedImages) && log.providedImages.length > 0 ? (
+                                        {providedImgs.length > 0 ? (
                                             <div className={styles.imageThumbContainer}>
-                                                {log.providedImages.map((img, idx) => {
+                                                {providedImgs.map((img, idx) => {
                                                     const imgSrc = typeof img === 'string' && img.trim() !== '' ? img : null;
                                                     return imgSrc ? (
                                                         <img
@@ -304,11 +321,12 @@ export default function HistoryPage() {
                                         )}
                                     </td>
                                     <td>
-                                        {log.gradCamImages && Array.isArray(log.gradCamImages) && log.gradCamImages.length > 0 ? (
+                                        {gradCams.length > 0 ? (
                                             <div className={styles.imageThumbContainer}>
-                                                {log.gradCamImages.map((img, idx) => {
-                                                    const imgUrl = typeof img === 'string' && img.trim() !== ''
-                                                        ? (img.startsWith('http') ? img : `/${img}`)
+                                                {gradCams.map((img, idx) => {
+                                                    const imgStr = typeof img === 'string' ? img.trim() : '';
+                                                    const imgUrl = imgStr 
+                                                        ? (imgStr.startsWith('http') || imgStr.startsWith('/') ? imgStr : `/${imgStr}`)
                                                         : null;
                                                     return imgUrl ? (
                                                         <img
@@ -331,12 +349,19 @@ export default function HistoryPage() {
                                                 View ({Object.keys(log.paramsScores).length})
                                             </summary>
                                             <div className={styles.paramsDropdown}>
-                                                {Object.entries(log.paramsScores).map(([param, score]) => (
-                                                    <div key={param} className={styles.paramRow}>
-                                                        <span className={styles.paramName}>{param.replace(/_/g, ' ')}</span>
-                                                        <span className={styles.paramScore}>{typeof score === 'number' ? score.toFixed(2) : score}</span>
-                                                    </div>
-                                                ))}
+                                                {Object.entries(log.paramsScores).map(([param, scoreInfo]) => {
+                                                    // Handle object that might contain 'score' (like {name, score, requiredAction})
+                                                    let scoreValue = scoreInfo;
+                                                    if (typeof scoreInfo === 'object' && scoreInfo !== null && 'score' in scoreInfo) {
+                                                        scoreValue = scoreInfo.score;
+                                                    }
+                                                    return (
+                                                        <div key={param} className={styles.paramRow}>
+                                                            <span className={styles.paramName}>{param.replace(/_/g, ' ')}</span>
+                                                            <span className={styles.paramScore}>{typeof scoreValue === 'number' ? scoreValue.toFixed(2) : String(scoreValue)}</span>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </details>
                                     </td>
@@ -348,7 +373,8 @@ export default function HistoryPage() {
                                         ) : <span className={styles.noData}>—</span>}
                                     </td>
                                 </tr>
-                            ))}
+                            );
+                        })}
                         </tbody>
                     </table>
 

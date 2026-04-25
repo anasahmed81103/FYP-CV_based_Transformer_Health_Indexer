@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:ui';
 
 class LandingScreen extends StatelessWidget {
@@ -18,7 +18,7 @@ class LandingScreen extends StatelessWidget {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.purple.withValues(alpha: 0.3),
+                color: const Color(0xFFF97316).withValues(alpha: 0.3), // Orange
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
@@ -34,7 +34,7 @@ class LandingScreen extends StatelessWidget {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.blue.withValues(alpha: 0.3),
+                color: const Color(0xFF2DD4BF).withValues(alpha: 0.3), // Teal
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
@@ -53,7 +53,7 @@ class LandingScreen extends StatelessWidget {
                   const SizedBox(height: 40),
                   // Header
                   Text(
-                    'KE Portal',
+                    'FAST Portal',
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -70,7 +70,7 @@ class LandingScreen extends StatelessWidget {
 
                   // Description
                   Text(
-                    'Welcome to the KE Portal - enter the future of AI-powered management and enhance productivity. Join us to use our state of art Computer Vision system.',
+                    'Welcome to the FAST Portal - enter the future of AI-powered management and enhance productivity. Join us to use our state of art Computer Vision system.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.grey[300],
@@ -88,11 +88,12 @@ class LandingScreen extends StatelessWidget {
                           onPressed: () =>
                               Navigator.pushNamed(context, '/login'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6366F1),
+                            backgroundColor: const Color(0xFF2DD4BF),
+                            foregroundColor: const Color(0xFF0D1A18),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                           child: const Text('Login',
-                              style: TextStyle(fontSize: 16)),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -101,7 +102,7 @@ class LandingScreen extends StatelessWidget {
                           onPressed: () =>
                               Navigator.pushNamed(context, '/signup'),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF6366F1)),
+                            side: const BorderSide(color: Colors.white24),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -123,14 +124,14 @@ class LandingScreen extends StatelessWidget {
                           onPressed: () =>
                               Navigator.pushNamed(context, '/about'),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.amberAccent),
+                            side: const BorderSide(color: Colors.white24),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text('Architecture & Pipeline',
+                          child: const Text('How It Works',
                               style: TextStyle(fontSize: 16)),
                         ),
                       ),
@@ -169,7 +170,7 @@ class LandingScreen extends StatelessWidget {
                   const SizedBox(height: 40),
                   // Footer
                   Text(
-                    'Â© 2025 KE Portal. All rights reserved.',
+                    '© 2025 FAST Portal. All rights reserved.',
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],

@@ -24,7 +24,7 @@ export default function Home() {
 
 
             <h1 className={styles.title}>
-              <span className={styles.titleAccent}> KE </span>
+              <span className={styles.titleAccent}> FAST </span>
               <span className={styles.titleAccent}> - </span>
               Transformer Health
               <span className={styles.titleAccent}> Indexer</span>

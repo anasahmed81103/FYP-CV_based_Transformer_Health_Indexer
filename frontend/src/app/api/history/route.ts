@@ -47,10 +47,13 @@ export async function GET(req: Request) {
         });
 
         // Get total count for pagination metadata
-        const countPromise = db.execute(sql`SELECT count(*) FROM analysis_logs WHERE user_id = ${userId}`);
+        const countPromise = db
+            .select({ count: sql<number>`count(*)` })
+            .from(analysisLogs)
+            .where(eq(analysisLogs.userId, userId));
 
         const [logs, countResult] = await Promise.all([logsPromise, countPromise]);
-        const totalCount = parseInt((countResult.rows[0] as any).count);
+        const totalCount = Number(countResult[0]?.count || 0);
 
         return NextResponse.json({
             logs,

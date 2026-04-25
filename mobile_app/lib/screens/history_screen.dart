@@ -33,9 +33,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final roleData = await ApiService.getUserRole();
       final role = roleData['role'];
       final email = roleData['email'];
-      const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
+      const masterAdminEmail = "junaidasif956@gmail.com";
 
-      final isGlobalAdmin = role == "admin" || email == MASTER_ADMIN_EMAIL;
+      final isGlobalAdmin = role == "admin" || email == masterAdminEmail;
 
       if (!isGlobalAdmin) {
         if (mounted) {
