@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.env
+outputs/
+temp_uploads/
+data/
+datasets/
+*.csv
+*.json
+notebooks/

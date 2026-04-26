@@ -2,6 +2,10 @@ from dotenv import load_dotenv
 import os
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
+# Download models from Supabase if not present locally
+from backend.startup import download_models
+download_models()
+
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
