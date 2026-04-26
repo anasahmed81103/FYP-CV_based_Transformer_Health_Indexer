@@ -7,6 +7,8 @@ import styles from './user_history.module.css';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaSignOutAlt, FaChartLine, FaCrown } from 'react-icons/fa';
 
+import {Suspense} from 'react';
+
 // Define possible user roles
 type UserRole = "admin" | "user" | "suspended" | "guest";
 
@@ -24,7 +26,7 @@ interface HistoryLog {
     feedback?: string;
 }
 
-export default function HistoryPage() {
+function HistoryPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams(); // Use this hook to get URL parameters
 
@@ -404,4 +406,12 @@ export default function HistoryPage() {
             )}
         </div>
     );
-}
+}
+
+export default function HistoryPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <HistoryPageInner />
+        </Suspense>
+    );
+}
