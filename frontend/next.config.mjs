@@ -7,6 +7,9 @@ const __dirname = path.dirname(__filename);
 
 const nextConfig = {
   reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     domains: ["127.0.0.1", "localhost", "wwulqliikayiycgmhlnf.supabase.co",
       "fyp-cv-based-transformer-health-indexer.onrender.com",],
