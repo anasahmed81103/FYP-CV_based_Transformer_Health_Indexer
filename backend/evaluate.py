@@ -221,7 +221,7 @@ def evaluate_transformer(image_paths):
     )
 
     # Ensure GradCAM directory exists
-    os.makedirs(cfg.GRADCAM_DIR, exist_ok=True)
+    # os.makedirs(cfg.GRADCAM_DIR, exist_ok=True)
 
     all_preds = []
     gradcam_urls = [] 
@@ -279,34 +279,24 @@ def evaluate_transformer(image_paths):
             max_idx = int(np.argmax(out))
             
             base_name = os.path.basename(img_path)
-            gradcam_filename = f"gradcam_{base_name}"
-            gradcam_file_abs = os.path.join(cfg.GRADCAM_DIR, gradcam_filename)
             
             try:
-                # 1. Temporarily enable gradients just for the GradCAM calculation
                 with torch.enable_grad():
-                    
-                    # 2. Get the model ready for a gradient pass
-                    health_model.train() # Set to train mode for backward hook registration
-                    
-                    # 3. Create a fresh, gradient-tracked input tensor
+                    health_model.train()
                     img_grad_t = test_t(img).unsqueeze(0).to(device).requires_grad_(True)
                     
-                    # 4. Generate GradCAM using the original image path and the new tensor
-                    generate_gradcam_for_image(
-                        health_model, 
-                        img_path, 
-                        gradcam_file_abs, 
+                    # now returns a Supabase public URL instead of local path
+                    gradcam_url = generate_gradcam_for_image(
+                        health_model,
+                        img_path,
+                        None,  # save_path no longer used
                         param_index=max_idx,
-                        input_tensor=img_grad_t # Pass the gradient-tracked tensor
+                        input_tensor=img_grad_t
                     )
-                    
-                    # 5. Return model to evaluation mode
                     health_model.eval()
                 
-                # Frontend URL path: e.g., "outputs/gradcam/gradcam_image.jpg"
-                gradcam_urls.append(f"outputs/gradcam/{gradcam_filename}")
-                print(f"✅ GradCAM generated for {base_name} at index {max_idx}.")
+                gradcam_urls.append(gradcam_url)  # full https:// URL
+                print(f"✅ GradCAM uploaded to Supabase for {base_name} at index {max_idx}.")
             except Exception as e:
                 print(f"⚠️ GradCAM failed for {img_path}: {e}")
                 import traceback
