@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+import os
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -7,6 +11,10 @@ import os, shutil, uuid
 from backend.evaluate import evaluate_transformer
 from backend.image_features import extract_image_features
 from backend.similarity import verify_transformer_images
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 app = FastAPI()
 
@@ -18,8 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "outputs")
-app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
+# now no output folder needed for holding gradcam images 
+# OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "outputs")
+# app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "temp_uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)

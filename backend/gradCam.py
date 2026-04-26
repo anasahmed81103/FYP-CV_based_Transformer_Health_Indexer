@@ -15,6 +15,11 @@ from core import config as cfg
 from core.utils import get_device
 from models.efficientnet import build_efficientnet
 
+import uuid
+from supabase import create_client
+
+
+
 
 # ============================================================
 # Grad-CAM
@@ -76,6 +81,12 @@ def overlay_cam(image, cam):
 # Generate Grad-CAM
 # ============================================================
 
+def _get_supabase():
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_KEY")
+    return create_client(url, key)
+
+
 def generate_gradcam_for_image(model, image_path, save_path, param_index=0, input_tensor=None):
     device = get_device()
     model.to(device).eval() 
@@ -108,9 +119,24 @@ def generate_gradcam_for_image(model, image_path, save_path, param_index=0, inpu
     cam = gradcam.generate()
     overlay = overlay_cam(original, cam)
 
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    cv2.imwrite(save_path, cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))
-    return save_path
+    # encode to PNG bytes in memory — no disk write
+    overlay_bgr = cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR)
+    _, buffer = cv2.imencode(".png", overlay_bgr)
+    image_bytes = buffer.tobytes()
+
+    # upload to Supabase Storage
+    filename = f"{uuid.uuid4()}.png"
+    supabase = _get_supabase()
+    supabase.storage.from_("gradcam").upload(
+        filename,
+        image_bytes,
+        {"content-type": "image/png"}
+    )
+
+    # return permanent public URL
+    public_url = supabase.storage.from_("gradcam").get_public_url(filename)
+   
+    return public_url
 
 
 # ============================================================
