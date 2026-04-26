@@ -8,20 +8,12 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ["127.0.0.1", "localhost"],
+    domains: ["127.0.0.1", "localhost", "wwulqliikayiycgmhlnf.supabase.co",
+      "fyp-cv-based-transformer-health-indexer.onrender.com",],
   },
   // Explicitly set the root to silence the warning about multiple lockfiles
   // This tells Next.js to treat the parent directory (project root) as the tracing root
   outputFileTracingRoot: path.join(__dirname, "../"),
-
-  async rewrites() {
-    return [
-      {
-        source: '/outputs/:path*',
-        destination: 'http://127.0.0.1:8000/outputs/:path*',
-      },
-    ];
-  },
 };
 
 export default nextConfig;
