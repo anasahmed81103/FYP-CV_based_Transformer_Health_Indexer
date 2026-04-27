@@ -435,89 +435,79 @@ export default function UserDashboard() {
   };
 
   // Proceed with actual analysis (after verification)
- const proceedWithAnalysis = async () => {
-  setShowVerificationModal(false);
-  setPendingAnalysis(false);
+  const proceedWithAnalysis = async () => {
+    setShowVerificationModal(false);
+    setPendingAnalysis(false);
+    
+    const formData = new FormData();
+    formData.append('transformer_id', transformerId);
+    formData.append('location', location);
+    formData.append('date', date);
+    formData.append('time', time);
+    formData.append('is_new_transformer', isNewTransformer.toString());
+    if (feedback) formData.append('feedback', feedback);
+    images.forEach((img) => formData.append('files', img));
 
-  const formData = new FormData();
-  formData.append('transformer_id', transformerId);
-  formData.append('location', location);
-  formData.append('date', date);
-  formData.append('time', time);
-  formData.append('is_new_transformer', isNewTransformer.toString());
-  if (feedback) formData.append('feedback', feedback);
-  images.forEach((img) => formData.append('files', img));
+    try {
+      const res = await fetch('/api/analyze', { method: 'POST', body: formData });
 
-  try {
-    // Step 1 — call Render directly (no Vercel timeout)
-    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
-    const mlRes = await fetch(`${backendUrl}/predict`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!mlRes.ok) throw new Error('Backend analysis failed');
-    const data = await mlRes.json();
-
-    // Step 2 — save result to DB via Next.js (fast, just a DB write)
-    const saveRes = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        transformer_id: transformerId,
-        location,
-        date,
-        time,
-        feedback,
-        is_new_transformer: isNewTransformer,
-        analysisData: data,
-      }),
-    });
-
-    if (saveRes.status === 409) {
-      const errData = await saveRes.json();
-      alert(`⚠️ ${errData.message}`);
-      setIsAnalyzing(false);
-      return;
-    }
-
-    const saveData = await saveRes.json();
-
-    if (saveData.dbAction === 'updated') alert('✅ Transformer information updated successfully!');
-    else if (saveData.dbAction === 'created') alert('✅ New transformer record created successfully!');
-
-    const nonPmt = (data.predictions || [])
-      .filter((p: any) => p.status === 'non-pmt')
-      .map((p: any) => p.image || 'Unknown Image');
-
-    const processedParameters = Object.entries(data.paramsScores || {}).map(
-      ([name, score]) => {
-        const s = Number(score);
-        const cleanName = name.replace(/_/g, ' ').replace('score', '').trim();
-        return {
-          name: cleanName,
-          score: s,
-          requiredAction: getRequiredAction(cleanName, Math.round(s)),
-        };
+      // Handle duplicate transformer ID error
+      if (res.status === 409) {
+        const errData = await res.json();
+        alert(`⚠️ ${errData.message || 'Transformer ID already exists. Please select from existing records.'}`);
+        setIsAnalyzing(false);
+        return;
       }
-    );
 
-    setAnalysisResult({
-      gradcamImages: data.gradCamImages || [],
-      healthIndex: Number(data.healthIndex || 0),
-      allParameters: processedParameters,
-      nonPmtImages: nonPmt,
-    });
+      if (!res.ok) throw new Error('Analysis failed.');
+      const data = await res.json();
 
-    setEditableParameters(processedParameters.map(p => ({ ...p })));
+      console.log('Backend response:', data);
 
-  } catch (err: any) {
-    console.error('Analysis failed:', err);
-    alert('Failed to analyze transformer images. Check backend server and console logs.');
-  } finally {
-    setIsAnalyzing(false);
-  }
-};
+      // Show appropriate success message based on database action
+      if (data.dbAction === 'updated') {
+        alert('✅ Transformer information updated successfully!');
+      } else if (data.dbAction === 'created') {
+        alert('✅ New transformer record created successfully!');
+      }
+
+      const nonPmt = (data.predictions || [])
+        .filter((p: any) => p.status === 'non-pmt')
+        .map((p: any) => p.image || 'Unknown Image');
+
+      // Process Parameters and Add Required Action
+      const processedParameters = Object.entries(data.paramsScores || {}).map(
+        ([name, score]) => {
+          const s = Number(score);
+          const cleanName = name.replace(/_/g, ' ').replace('score', '').trim();
+          return {
+            name: cleanName,
+            score: s,
+            requiredAction: getRequiredAction(cleanName, Math.round(s)),
+          };
+        }
+      );
+
+      setAnalysisResult({
+        gradcamImages: data.gradCamImages || [],
+        healthIndex: Number(data.healthIndex || 0),
+        allParameters: processedParameters,
+        nonPmtImages: nonPmt,
+      });
+
+      // Initialize editable parameters with current scores
+      setEditableParameters(
+        processedParameters.map(p => ({ ...p })) // shallow copy
+      );
+
+
+    } catch (err: any) {
+      console.error('Analysis failed:', err);
+      alert('Failed to analyze transformer images. Check backend server and console logs.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
