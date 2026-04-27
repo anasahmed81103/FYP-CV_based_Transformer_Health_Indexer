@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 MODELS = [
-    "custom_cnn_best.pth",
+    # "custom_cnn_best.pth", not used in pipeline 
     "efficientnet_b0_best.pth",
     "pmt_classifier_best.pth",
 ]
