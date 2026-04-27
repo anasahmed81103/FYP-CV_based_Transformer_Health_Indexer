@@ -804,7 +804,17 @@ export default function UserDashboard() {
                     
                     <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>3. Parameter Corrections</h4>
                     <p>When the AI analysis is complete, you will see the predicted defect scores. If you believe the model predicted incorrectly, you can <strong>manipulate the values</strong> in the "Optional Parameter Corrections" section at the bottom.</p>
-                    <p>Adjust the scores and click <strong>"Submit Corrected Scores"</strong>. The results and required actions will immediately update to reflect your expert judgment.</p>
+                    <p style={{ marginBottom: '1rem' }}>Adjust the scores and click <strong>"Submit Corrected Scores"</strong>. The results and required actions will immediately update to reflect your expert judgment.</p>
+                    
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>4. Parameter Defect Score Interpretation</h4>
+                    <p style={{ marginBottom: '0.5rem', fontStyle: 'italic', color: '#9ca3af' }}>Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.</p>
+                    <p style={{ marginBottom: '0.5rem' }}><strong>1 is the Best Parameter Score:</strong> This indicates the component is in "Excellent" or "New" condition with no detectable defects.</p>
+                    <p style={{ marginBottom: '0.5rem' }}><strong>6 is the Worst Parameter Score:</strong> This represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).</p>
+                    <ul style={{ listStyleType: 'disc', marginLeft: '1.5rem', marginBottom: '1rem' }}>
+                      <li><strong>1.0 &ndash; 3.4 (Good / Normal):</strong> No action or minor maintenance needed (e.g., paint, clean, or tighten connections).</li>
+                      <li><strong>3.5 &ndash; 4.4 (Moderate / Fair):</strong> Requires active onsite repair (e.g., welding, oil top-up, or replacement).</li>
+                      <li><strong>4.5 &ndash; 6.0 (Critical / Poor):</strong> Requires immediate attention or being sent to the workshop (TSW) for a full overhaul.</li>
+                    </ul>
                   </div>
                 ) : (
                   <div style={{ color: '#d1d5db', fontSize: '1.0rem', lineHeight: '1.8', fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu, Arial' }}>
@@ -816,7 +826,17 @@ export default function UserDashboard() {
                     
                     <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>3. پیرامیٹر کی اصلاحات</h4>
                     <p>جب AI تجزیہ مکمل ہو جائے، تو آپ کو پیش گوئی شدہ نقص کا اسکور نظر آئے گا۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو آپ نیچے <strong>'اختیاری پیرامیٹر کی اصلاحات'</strong> سیکشن میں اقدار میں تبدیلی کر سکتے ہیں۔</p>
-                    <p>اسکورز کو درست کریں اور <strong>'درست شدہ اسکور جمع کریں'</strong> پر کلک کریں۔ نتائج اور مطلوبہ اقدامات آپ کے ماہرانہ فیڈبیک کے مطابق فوری طور پر اپ ڈیٹ ہو جائیں گے۔</p>
+                    <p style={{ marginBottom: '1rem' }}>اسکورز کو درست کریں اور <strong>'درست شدہ اسکور جمع کریں'</strong> پر کلک کریں۔ نتائج اور مطلوبہ اقدامات آپ کے ماہرانہ فیڈبیک کے مطابق فوری طور پر اپ ڈیٹ ہو جائیں گے۔</p>
+                    
+                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>4. پیرامیٹر ڈیفیکٹ اسکور کی تفصیل</h4>
+                    <p style={{ marginBottom: '0.5rem', fontStyle: 'italic', color: '#9ca3af' }}>نوٹ: یہ ٹرانسفارمر کا مجموعی ہیلتھ اسکور نہیں ہے۔ یہ انفرادی پیرامیٹرز کے نقص کا اسکور ہے جو حتمی ہیلتھ انڈیکس کا حساب لگانے کے لیے استعمال ہوتا ہے۔</p>
+                    <p style={{ marginBottom: '0.5rem' }}><strong>1 بہترین پیرامیٹر اسکور ہے:</strong> یہ ظاہر کرتا ہے کہ حصہ "بہترین" یا "نئی" حالت میں ہے اور کوئی نقص نہیں ہے۔</p>
+                    <p style={{ marginBottom: '0.5rem' }}><strong>6 بدترین پیرامیٹر اسکور ہے:</strong> انتہائی خراب حالت۔ اگر اسکور 6 ہے، تو اس کا مطلب ہے کہ بڑا مسئلہ ہے جیسے کہ بڑی لیکیج یا جلا ہوا کنیکٹر۔</p>
+                    <ul style={{ listStyleType: 'disc', marginRight: '1.5rem', marginBottom: '1rem' }}>
+                      <li><strong>1.0 &ndash; 3.4 (اچھا / نارمل):</strong> کوئی ایکشن نہیں یا معمولی دیکھ بھال کی ضرورت (جیسے صفائی، پینٹ، کنکشن ٹائٹ کرنا)۔</li>
+                      <li><strong>3.5 &ndash; 4.4 (درمیانہ / معتدل):</strong> موقع پر مرمت کی ضرورت (جیسے ویلڈنگ، تیل بھرنا، یا موقع پر تبدیلی)۔</li>
+                      <li><strong>4.5 &ndash; 6.0 (انتہائی خراب / نازک):</strong> فوری توجہ یا ورکشاپ (TSW) میں مکمل اوور ہال کی ضرورت۔</li>
+                    </ul>
                   </div>
                 )}
 
@@ -1087,6 +1107,30 @@ export default function UserDashboard() {
                 {/* Remove the span and just output the value directly in the centered, large container */}
                 {analysisResult.healthIndex.toFixed(2)}
               </p>
+            </div>
+
+            {/* Health Score Interpretation UI */}
+            <div className={styles.warningBox} style={{ backgroundColor: '#1e293b', borderColor: '#3b82f6', marginTop: '1rem', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <h3 style={{ color: '#38bdf8', marginBottom: '0.5rem' }}>Parameter Defect Score Interpretation</h3>
+              <p style={{ fontSize: '0.9rem', color: '#cbd5e1', fontStyle: 'italic', marginBottom: '0.5rem' }}>Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+                <div style={{ flex: '1 1 300px', backgroundColor: 'rgba(34, 197, 94, 0.1)', padding: '0.75rem', borderRadius: '0.5rem', borderLeft: '4px solid #22c55e' }}>
+                  <strong>1 is the Best Parameter Score:</strong> <br/>
+                  <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>This indicates the component is in "Excellent" or "New" condition with no detectable defects.</span>
+                </div>
+                <div style={{ flex: '1 1 300px', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '0.5rem', borderLeft: '4px solid #ef4444' }}>
+                  <strong>6 is the Worst Parameter Score:</strong> <br/>
+                  <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>This represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).</span>
+                </div>
+              </div>
+              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1rem', borderRadius: '0.5rem' }}>
+                <strong style={{ color: 'white' }}>Score Intervals:</strong>
+                <ul style={{ listStyleType: 'none', paddingLeft: 0, marginTop: '0.5rem', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <li><span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#22c55e', marginRight: '8px' }}></span> <strong>1.0 &ndash; 3.4 (Good / Normal):</strong> No action or minor maintenance needed (e.g., paint, clean, or tighten connections).</li>
+                  <li><span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#facc15', marginRight: '8px' }}></span> <strong>3.5 &ndash; 4.4 (Moderate / Fair):</strong> Requires active onsite repair (e.g., welding, oil top-up, or onsite replacement).</li>
+                  <li><span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', marginRight: '8px' }}></span> <strong>4.5 &ndash; 6.0 (Critical / Poor):</strong> Requires immediate attention or being sent to the workshop (TSW) for a full overhaul.</li>
+                </ul>
+              </div>
             </div>
 
             {/* All Parameters + Required Action */}

@@ -250,5 +250,173 @@
         "difference": 0.0
       }
     ]
+  },
+  {
+    "transformer_id": "t69",
+    "timestamp": "2026-04-27 18:21:23.259397",
+    "adjustments": [
+      {
+        "parameter": "Oil leakage",
+        "original": 1.0385024547576904,
+        "corrected": 1.0385024547576904,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Corrosion",
+        "original": 1.0003186464309692,
+        "corrected": 1.0003186464309692,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Rust",
+        "original": 3.045008659362793,
+        "corrected": 3.045008659362793,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Paint fading",
+        "original": 3.111079454421997,
+        "corrected": 3.111079454421997,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Bushing cracks",
+        "original": 3.0766031742095947,
+        "corrected": 3.0766031742095947,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Broken connectors",
+        "original": 5.162189483642578,
+        "corrected": 5.162189483642578,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Insulator contamination",
+        "original": 3.1167871952056885,
+        "corrected": 3.1167871952056885,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Burnt marks / overheating",
+        "original": 0.9158502817153931,
+        "corrected": 0.9158502817153931,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Deformed tank / bent fins",
+        "original": 2.949152708053589,
+        "corrected": 2.949152708053589,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Loose or unsafe wiring",
+        "original": 2.9962329864501953,
+        "corrected": 2.9962329864501953,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Dust accumulation",
+        "original": 1.9853484630584717,
+        "corrected": 1.9853484630584717,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Gasket leakage",
+        "original": 6,
+        "corrected": 5,
+        "difference": -1
+      },
+      {
+        "parameter": "Damaged or bent pole structure",
+        "original": 6,
+        "corrected": 6,
+        "difference": 0
+      }
+    ]
+  },
+  {
+    "transformer_id": "t69",
+    "timestamp": "2026-04-27 18:21:23.781406",
+    "adjustments": [
+      {
+        "parameter": "Oil leakage",
+        "original": 1.0385024547576904,
+        "corrected": 1.0385024547576904,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Corrosion",
+        "original": 1.0003186464309692,
+        "corrected": 1.0003186464309692,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Rust",
+        "original": 3.045008659362793,
+        "corrected": 3.045008659362793,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Paint fading",
+        "original": 3.111079454421997,
+        "corrected": 3.111079454421997,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Bushing cracks",
+        "original": 3.0766031742095947,
+        "corrected": 3.0766031742095947,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Broken connectors",
+        "original": 5.162189483642578,
+        "corrected": 5.162189483642578,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Insulator contamination",
+        "original": 3.1167871952056885,
+        "corrected": 3.1167871952056885,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Burnt marks / overheating",
+        "original": 0.9158502817153931,
+        "corrected": 0.9158502817153931,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Deformed tank / bent fins",
+        "original": 2.949152708053589,
+        "corrected": 2.949152708053589,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Loose or unsafe wiring",
+        "original": 2.9962329864501953,
+        "corrected": 2.9962329864501953,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Dust accumulation",
+        "original": 1.9853484630584717,
+        "corrected": 1.9853484630584717,
+        "difference": 0.0
+      },
+      {
+        "parameter": "Gasket leakage",
+        "original": 6,
+        "corrected": 5,
+        "difference": -1
+      },
+      {
+        "parameter": "Damaged or bent pole structure",
+        "original": 6,
+        "corrected": 6,
+        "difference": 0
+      }
+    ]
   }
 ]

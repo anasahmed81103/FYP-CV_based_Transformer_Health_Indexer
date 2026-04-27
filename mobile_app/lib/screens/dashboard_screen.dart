@@ -256,6 +256,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text('3. پیرامیٹر کی اصلاحات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       SizedBox(height: 4),
                       Text('جب AI تجزیہ مکمل ہو جائے، تو آپ کو پیش گوئی شدہ نقص کا اسکور نظر آئے گا۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو آپ ویب پورٹل میں اقدار میں تبدیلی کر سکتے ہیں تاکہ آپ کے ماہرانہ فیصلے کے مطابق نتائج فوری طور پر اپ ڈیٹ ہو جائیں۔', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      SizedBox(height: 12),
+                      Text('4. پیرامیٹر ڈیفیکٹ اسکور کی تفصیل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('نوٹ: یہ ٹرانسفارمر کا مجموعی ہیلتھ اسکور نہیں ہے۔ یہ انفرادی پیرامیٹرز کے نقص کا اسکور ہے جو حتمی ہیلتھ انڈیکس کا حساب لگانے کے لیے استعمال ہوتا ہے۔\n\n• 1 بہترین پیرامیٹر اسکور ہے: ظاہر کرتا ہے کہ حصہ "بہترین" یا "نئی" حالت میں ہے اور کوئی نقص نہیں ہے۔\n• 6 بدترین پیرامیٹر اسکور ہے: انتہائی خراب حالت۔ اگر اسکور 6 ہے، تو اس کا مطلب ہے کہ بڑا مسئلہ ہے جیسے کہ بڑی لیکیج یا جلا ہوا کنیکٹر۔\n\nاسکور کے درجات:\n• 1.0 – 3.4 (اچھا / نارمل): کوئی ایکشن نہیں یا معمولی دیکھ بھال کی ضرورت۔\n• 3.5 – 4.4 (درمیانہ / معتدل): موقع پر مرمت کی ضرورت جیسے ویلڈنگ یا تیل بھرنا۔\n• 4.5 – 6.0 (انتہائی خراب / نازک): فوری توجہ یا ورکشاپ (TSW) میں مکمل اوور ہال کی ضرورت۔', style: TextStyle(color: Colors.grey, fontSize: 14)),
                     ] : const [
                       Text('1. Filling the Form', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       SizedBox(height: 4),
@@ -268,6 +272,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text('3. Parameter Corrections', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       SizedBox(height: 4),
                       Text('After analysis, review the predicted scores. If you feel the model’s prediction is incorrect, you can manipulate the values in the web portal to instantly update the results according to your expert judgment.', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      SizedBox(height: 12),
+                      Text('4. Parameter Defect Score Interpretation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.\n\n• 1 is the Best Parameter Score: Indicates the component is in "Excellent" or "New" condition with no detectable defects.\n• 6 is the Worst Parameter Score: Represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).\n\nScore Intervals:\n• 1.0 – 3.4 (Good / Normal): No action or minor maintenance needed.\n• 3.5 – 4.4 (Moderate / Fair): Requires active onsite repair like welding or oil top-ups.\n• 4.5 – 6.0 (Critical / Poor): Requires immediate attention or being sent to the workshop (TSW) for a full overhaul.', style: TextStyle(color: Colors.grey, fontSize: 14)),
                     ],
                   ),
                 ),
@@ -814,6 +822,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text(
                   '(Defect Score: ${result.healthIndex.toStringAsFixed(2)} / 78.0)',
                   style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        const SizedBox(height: 24),
+
+        // Health Score Interpretation UI
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Parameter Defect Score Interpretation', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8))),
+              const SizedBox(height: 4),
+              const Text('Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: const Border(left: BorderSide(color: Colors.green, width: 4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('1 is the Best Parameter Score:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    SizedBox(height: 4),
+                    Text('Indicates the component is in "Excellent" or "New" condition with no detectable defects.', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: const Border(left: BorderSide(color: Colors.red, width: 4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('6 is the Worst Parameter Score:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    SizedBox(height: 4),
+                    Text('Represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Score Intervals:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(margin: const EdgeInsets.only(top: 6, right: 8), width: 8, height: 8, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
+                  const Expanded(child: Text.rich(TextSpan(children: [TextSpan(text: '1.0 – 3.4 (Good / Normal): ', style: TextStyle(fontWeight: FontWeight.bold)), TextSpan(text: 'No action or minor maintenance needed.', style: TextStyle(color: Colors.grey))]), style: TextStyle(fontSize: 13))),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(margin: const EdgeInsets.only(top: 6, right: 8), width: 8, height: 8, decoration: const BoxDecoration(color: Colors.yellow, shape: BoxShape.circle)),
+                  const Expanded(child: Text.rich(TextSpan(children: [TextSpan(text: '3.5 – 4.4 (Moderate / Fair): ', style: TextStyle(fontWeight: FontWeight.bold)), TextSpan(text: 'Requires active onsite repair like welding or oil top-ups.', style: TextStyle(color: Colors.grey))]), style: TextStyle(fontSize: 13))),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(margin: const EdgeInsets.only(top: 6, right: 8), width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                  const Expanded(child: Text.rich(TextSpan(children: [TextSpan(text: '4.5 – 6.0 (Critical / Poor): ', style: TextStyle(fontWeight: FontWeight.bold)), TextSpan(text: 'Requires immediate attention or being sent to workshop (TSW).', style: TextStyle(color: Colors.grey))]), style: TextStyle(fontSize: 13))),
+                ],
+              ),
             ],
           ),
         ),
