@@ -7,6 +7,9 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { eq, sql } from "drizzle-orm";
 
+
+export const maxDuration = 60; // seconds - Vercel max for free tier
+
 // --- Helper to get JWT token from header or cookie ---
 async function getAuthToken(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("authorization");
@@ -46,16 +49,34 @@ export async function POST(req: Request) {
   const isNewTransformer = formData.get("is_new_transformer") === "true";
 
   const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+  
+  // Add AbortController for timeout
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+
 
   try {
-    // --- Call backend model API ---
-    const res = await fetch(`${backendUrl}/predict`, { method: "POST", body: formData });
-    if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.detail || "Backend analysis failed");
-    }
+    
+    const res = await fetch(`${backendUrl}/predict`, {
+    method: "POST",
+    body: formData,
+    signal: controller.signal,
+  });
+  clearTimeout(timeoutId);
 
-    const analysisData = await res.json();
+  if (!res.ok) {
+    const errText = await res.text();
+    let errData: any = {};
+    try { errData = JSON.parse(errText); } catch {}
+    throw new Error(errData.detail || "Backend analysis failed");
+  }
+
+  const text = await res.text();
+  if (!text || text.trim() === '') {
+    throw new Error("Empty response from backend");
+  }
+
+  const analysisData = JSON.parse(text);
 
     // --- Health Index & Status Calculation ---
     // Backend returns RAW DEFECT SUM (0-78): Higher score = More defects = Worse health
