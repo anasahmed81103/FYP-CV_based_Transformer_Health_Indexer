@@ -23,6 +23,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN python -c "import torchvision; torchvision.models.efficientnet_b0(weights='DEFAULT')"
+
 # Copy entire project
 COPY . .
 
