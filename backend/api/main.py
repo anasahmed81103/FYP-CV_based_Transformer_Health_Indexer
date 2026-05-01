@@ -33,6 +33,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "Transformer Health API is running 🚀"}
+
 # now no output folder needed for holding gradcam images 
 # OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "outputs")
 # app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
