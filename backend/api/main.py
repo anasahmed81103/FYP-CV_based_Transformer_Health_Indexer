@@ -15,6 +15,11 @@ import os, shutil, uuid
 from backend.evaluate import evaluate_transformer
 from backend.image_features import extract_image_features
 from backend.similarity import verify_transformer_images
+from backend.supabase_adjustments import (
+    fetch_learned_adjustments,
+    store_adjustment_history,
+    update_learned_adjustments,
+)
 
 
 
@@ -181,7 +186,6 @@ async def predict(
     time: str = Form(...),
     files: list[UploadFile] = File(...),
 ):
-    import json
     import numpy as np
     from backend.adjustment_layer import apply_adjustments
     from backend.adaptation import adaptive_layer
@@ -199,11 +203,11 @@ async def predict(
     # --- Step 1: Model Prediction ---
     result = evaluate_transformer(saved_paths)
 
-    # --- Step 2: Apply GLOBAL learned adjustments ---
+    # --- Step 2: Apply GLOBAL learned adjustments (Supabase) ---
     try:
-        with open("learned_adjustments.json", "r") as f:
-            learned = json.load(f)
-    except:
+        learned = fetch_learned_adjustments()
+    except Exception as e:
+        print(f"⚠️ Failed to load learned adjustments from Supabase: {e}")
         learned = {}
 
     if "paramsScores" in result:
@@ -229,6 +233,10 @@ async def predict(
     except Exception as e:
         print(f"⚠️ Adaptive layer failed: {e}")
 
+    # Keep top metric consistent with adjusted parameter scores.
+    if "paramsScores" in result and result["paramsScores"]:
+        result["healthIndex"] = float(sum(float(v) for v in result["paramsScores"].values()))
+
     return result
 
 
@@ -240,11 +248,9 @@ async def submit_corrections(
     files: list[UploadFile] = File(...)
 ):
     import json
-    import os
     import numpy as np
     import uuid
     import shutil
-    from datetime import datetime
     from backend.adaptation import adaptive_layer
 
     # --- Parse incoming data ---
@@ -274,63 +280,22 @@ async def submit_corrections(
     print("Adjustments:", adjustments)
 
     # ==============================
-    # ✅ LEVEL 2: STORE HISTORY
+    # ✅ LEVEL 2: STORE HISTORY (Supabase)
     # ==============================
-
-    ADJUSTMENT_FILE = os.path.join(os.path.dirname(__file__), "adjustments.json")
-
     try:
-        if os.path.exists(ADJUSTMENT_FILE):
-            with open(ADJUSTMENT_FILE, "r") as f:
-                existing = json.load(f)
-        else:
-            existing = []
+        store_adjustment_history(transformer_id, adjustments)
+        print("✅ Adjustments saved successfully to Supabase")
     except Exception as e:
-        print("⚠️ Failed to read adjustments file:", e)
-        existing = []
-
-    existing.append({
-        "transformer_id": transformer_id,
-        "timestamp": str(datetime.now()),
-        "adjustments": adjustments
-    })
-
-    try:
-        with open(ADJUSTMENT_FILE, "w") as f:
-            json.dump(existing, f, indent=2)
-        print("✅ Adjustments saved successfully")
-    except Exception as e:
-        print("❌ Failed to save adjustments:", e)
+        print("❌ Failed to save adjustments to Supabase:", e)
 
     # ==============================
-    # ✅ LEVEL 3: GLOBAL LEARNING
+    # ✅ LEVEL 3: GLOBAL LEARNING (Supabase)
     # ==============================
-
-    LEARNED_FILE = os.path.join(os.path.dirname(__file__), "learned_adjustments.json")
-
     try:
-        if os.path.exists(LEARNED_FILE):
-            with open(LEARNED_FILE, "r") as f:
-                learned_adjustments = json.load(f)
-        else:
-            learned_adjustments = {}
+        update_learned_adjustments(adjustments, learning_rate=0.1)
+        print("✅ Learned adjustments updated in Supabase")
     except Exception as e:
-        print("⚠️ Failed to read learned adjustments:", e)
-        learned_adjustments = {}
-
-    for adj in adjustments:
-        param = adj["parameter"]
-        diff = adj["difference"]
-
-        # small learning rate (0.1)
-        learned_adjustments[param] = learned_adjustments.get(param, 0) + diff * 0.1
-
-    try:
-        with open(LEARNED_FILE, "w") as f:
-            json.dump(learned_adjustments, f, indent=2)
-        print("✅ Learned adjustments updated")
-    except Exception as e:
-        print("❌ Failed to save learned adjustments:", e)
+        print("❌ Failed to update learned adjustments in Supabase:", e)
 
     # ==============================
     # 🔥 LEVEL 3: ADAPTIVE LEARNING

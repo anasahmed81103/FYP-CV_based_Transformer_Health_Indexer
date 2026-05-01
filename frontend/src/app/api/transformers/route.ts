@@ -9,32 +9,57 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "30");
+  const search = (searchParams.get("search") || "").trim();
 
   const offset = (page - 1) * limit;
+  const prefixPattern = `${search}%`;
 
   try {
-    // Get total count of DISTINCT transformer IDs
-    const countResult = await db
-      .select({ count: sql<number>`count(DISTINCT transformer_id)` })
-      .from(analysisLogs);
-    const totalCount = Number(countResult[0]?.count || 0);
+    // Count distinct IDs, optionally filtered by typed prefix.
+    const countResult = search
+      ? await db.execute(sql`
+          SELECT COUNT(DISTINCT transformer_id) as count
+          FROM analysis_logs
+          WHERE transformer_id ILIKE ${prefixPattern}
+        `)
+      : await db
+          .select({ count: sql<number>`count(DISTINCT transformer_id)` })
+          .from(analysisLogs);
 
-    // Fetch paginated DISTINCT transformer IDs with their latest location
-    // Using PostgreSQL DISTINCT ON to get unique transformers
-    const result = await db.execute(sql`
-      SELECT DISTINCT ON (transformer_id) 
-        transformer_id as "transformerId",
-        location as "location"
-      FROM analysis_logs
-      ORDER BY transformer_id, created_at DESC
-      LIMIT ${limit}
-      OFFSET ${offset}
-    `);
+    const rawCount = Array.isArray(countResult)
+      ? Number((countResult[0] as { count?: number | string } | undefined)?.count ?? 0)
+      : Number(
+          (countResult as { rows?: Array<{ count?: number | string }> })?.rows?.[0]?.count ?? 0
+        );
+    const totalCount = Number.isFinite(rawCount) ? rawCount : 0;
+
+    // Fetch paginated unique IDs with latest location, with optional prefix filtering.
+    const result = search
+      ? await db.execute(sql`
+          SELECT DISTINCT ON (transformer_id) 
+            transformer_id as "transformerId",
+            location as "location"
+          FROM analysis_logs
+          WHERE transformer_id ILIKE ${prefixPattern}
+          ORDER BY transformer_id, created_at DESC
+          LIMIT ${limit}
+          OFFSET ${offset}
+        `)
+      : await db.execute(sql`
+          SELECT DISTINCT ON (transformer_id) 
+            transformer_id as "transformerId",
+            location as "location"
+          FROM analysis_logs
+          ORDER BY transformer_id, created_at DESC
+          LIMIT ${limit}
+          OFFSET ${offset}
+        `);
 
     const transformers = result.rows || result;
 
     return NextResponse.json({
       transformers,
+      search,
       pagination: {
         page,
         limit,
