@@ -15,9 +15,7 @@ import os, shutil, uuid
 from backend.evaluate import evaluate_transformer
 from backend.image_features import extract_image_features
 from backend.similarity import verify_transformer_images
-from dotenv import load_dotenv
 
-load_dotenv()
 
 
 app = FastAPI()
