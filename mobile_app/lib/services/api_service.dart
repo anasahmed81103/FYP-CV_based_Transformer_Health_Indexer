@@ -14,16 +14,16 @@ class ApiService {
   // Web: localhost
   static String get baseUrl {
     if (kIsWeb) {
-      return dotenv.env['API_URL_WEB'] ?? 'http://localhost:8000';
+      return dotenv.env['API_URL_WEB'] ?? 'http://localhost:3000/api';
     }
-    return dotenv.env['API_URL_ANDROID'] ?? 'http://10.0.2.2:8000';
+    return Platform.isAndroid
+        ? (dotenv.env['API_URL_ANDROID'] ?? 'http://10.0.2.2:3000/api')
+        : (dotenv.env['API_URL_MOBILE'] ?? 'http://10.0.2.2:3000/api');
   }
 
   static String get imageBaseUrl {
-    if (kIsWeb) return 'http://192.168.100.15:3000';
-    return Platform.isAndroid
-        ? 'http://192.168.100.15:3000'
-        : 'http://192.168.100.15:3000';
+    if (kIsWeb) return dotenv.env['IMAGE_BASE_URL'] ?? 'http://localhost:3000';
+    return dotenv.env['IMAGE_BASE_URL'] ?? 'http://10.0.2.2:3000';
   }
 
   static String? _authToken;

@@ -851,9 +851,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: const Border(left: BorderSide(color: Colors.green, width: 4)),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('1 is the Best Parameter Score:', style: TextStyle(fontWeight: FontWeight.bold)),
                     SizedBox(height: 4),
                     Text('Indicates the component is in "Excellent" or "New" condition with no detectable defects.', style: TextStyle(fontSize: 13, color: Colors.grey)),
@@ -868,9 +868,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: const Border(left: BorderSide(color: Colors.red, width: 4)),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('6 is the Worst Parameter Score:', style: TextStyle(fontWeight: FontWeight.bold)),
                     SizedBox(height: 4),
                     Text('Represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).', style: TextStyle(fontSize: 13, color: Colors.grey)),
