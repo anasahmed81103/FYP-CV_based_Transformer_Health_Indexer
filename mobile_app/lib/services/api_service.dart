@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -12,18 +11,18 @@ class ApiService {
   // iOS Simulator: 127.0.0.1
   // Real Device: Your PC's IP address
   // Web: localhost
-  static String get baseUrl {
-    if (kIsWeb) {
-      return dotenv.env['API_URL_WEB'] ?? 'http://localhost:3000/api';
-    }
-    return Platform.isAndroid
-        ? (dotenv.env['API_URL_ANDROID'] ?? 'http://10.0.2.2:3000/api')
-        : (dotenv.env['API_URL_MOBILE'] ?? 'http://10.0.2.2:3000/api');
+  static String get webBaseUrl {
+    final url = dotenv.env['WEB_BASE_URL'] ?? 'http://10.0.2.2:3000';
+    return '$url/api';
+  }
+
+  static String get apiBaseUrl {
+    return dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000';
   }
 
   static String get imageBaseUrl {
-    if (kIsWeb) return dotenv.env['IMAGE_BASE_URL'] ?? 'http://localhost:3000';
-    return dotenv.env['IMAGE_BASE_URL'] ?? 'http://10.0.2.2:3000';
+    final url = dotenv.env['WEB_BASE_URL'] ?? 'http://10.0.2.2:3000';
+    return url;
   }
 
   static String? _authToken;
@@ -72,7 +71,7 @@ class ApiService {
       String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
+        Uri.parse('$webBaseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
@@ -108,7 +107,7 @@ class ApiService {
       Map<String, String> userData) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/signup'),
+        Uri.parse('$webBaseUrl/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(userData),
       );
@@ -136,7 +135,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getUserRole() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/user/role'),
+        Uri.parse('$webBaseUrl/user/role'),
         headers: _headers,
       );
 
@@ -150,14 +149,15 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> getHistory({int page = 1, int limit = 10}) async {
+  static Future<Map<String, dynamic>> getHistory(
+      {int page = 1, int limit = 10}) async {
     try {
       if (kDebugMode) {
         print('Fetching history with token: $_authToken, page: $page');
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/history?page=$page&limit=$limit'),
+        Uri.parse('$webBaseUrl/history?page=$page&limit=$limit'),
         headers: _headers,
       );
 
@@ -185,7 +185,7 @@ class ApiService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/admin/users'),
+        Uri.parse('$webBaseUrl/admin/users'),
         headers: _headers,
       );
 
@@ -211,7 +211,7 @@ class ApiService {
       String date, String time, List<XFile> images,
       {String? feedback}) async {
     // Endpoint is /analyze to hit Next.js API route that handles DB just like Web App
-    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/analyze'));
+    var request = http.MultipartRequest('POST', Uri.parse('$webBaseUrl/analyze'));
 
     // ... (rest of the headers logic)
 
@@ -287,7 +287,7 @@ class ApiService {
     if (token == null) throw Exception('Not authenticated');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/admin/users/$userId/role'),
+      Uri.parse('$webBaseUrl/admin/users/$userId/role'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -304,7 +304,7 @@ class ApiService {
   static Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/forgot-password'),
+        Uri.parse('$webBaseUrl/forgot-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
@@ -325,7 +325,7 @@ class ApiService {
       String token, String newPassword) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/reset-password'),
+        Uri.parse('$webBaseUrl/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'token': token, 'newPassword': newPassword}),
       );
@@ -345,7 +345,7 @@ class ApiService {
   static Future<Map<String, dynamic>> verifyEmail(String token) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/verify-email'),
+        Uri.parse('$webBaseUrl/verify-email'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'token': token}),
       );
@@ -359,6 +359,113 @@ class ApiService {
       }
     } catch (e) {
       throw Exception(e.toString());
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyTransformer(
+      List<XFile> images, String storedFeaturesJson) async {
+    var request = http.MultipartRequest(
+        'POST', Uri.parse('$apiBaseUrl/verify-transformer'));
+
+    if (_authToken != null) {
+      request.headers['Authorization'] = 'Bearer $_authToken';
+    }
+
+    request.fields['stored_features'] = storedFeaturesJson;
+
+    for (var image in images) {
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'files',
+          bytes,
+          filename: image.name,
+        ));
+      } else {
+        request.files
+            .add(await http.MultipartFile.fromPath('files', image.path));
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Verify Transformer failed: ${response.body}');
+    }
+  }
+
+  static Future<Map<String, dynamic>> extractHashes(List<XFile> images) async {
+    var request =
+        http.MultipartRequest('POST', Uri.parse('$apiBaseUrl/extract-hashes'));
+
+    if (_authToken != null) {
+      request.headers['Authorization'] = 'Bearer $_authToken';
+    }
+
+    for (var image in images) {
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'files',
+          bytes,
+          filename: image.name,
+        ));
+      } else {
+        request.files
+            .add(await http.MultipartFile.fromPath('files', image.path));
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Extract hashes failed: ${response.body}');
+    }
+  }
+
+  static Future<Map<String, dynamic>> submitCorrections(
+      String transformerId,
+      String originalScoresJson,
+      String correctedScoresJson,
+      List<XFile> images) async {
+    var request = http.MultipartRequest(
+        'POST', Uri.parse('$apiBaseUrl/submit-corrections'));
+
+    if (_authToken != null) {
+      request.headers['Authorization'] = 'Bearer $_authToken';
+    }
+
+    request.fields['transformer_id'] = transformerId;
+    request.fields['original_scores'] = originalScoresJson;
+    request.fields['corrected_scores'] = correctedScoresJson;
+
+    for (var image in images) {
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'files',
+          bytes,
+          filename: image.name,
+        ));
+      } else {
+        request.files
+            .add(await http.MultipartFile.fromPath('files', image.path));
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Submit corrections failed: ${response.body}');
     }
   }
 }

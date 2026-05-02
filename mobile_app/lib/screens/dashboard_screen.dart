@@ -719,9 +719,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               itemCount: result.gradCamImages.length,
               itemBuilder: (context, index) {
                 final path = result.gradCamImages[index];
-                // Path from backend is like "outputs/gradcam/filename.jpg"
-                // Construct full URL
-                final url = '${ApiService.imageBaseUrl}/$path';
+                // Path from backend is usually a full Supabase URL now.
+                // If it's not a full URL, we prepend the imageBaseUrl.
+                final url = path.startsWith('http') ? path : '${ApiService.imageBaseUrl}/$path';
 
                 return Container(
                   margin: const EdgeInsets.only(right: 12),
