@@ -1,7 +1,9 @@
 /* ========================================
    USER DASHBOARD - Unified Design
-   ======================================== */
+   ======================================== 
+   */
 
+   
 .container {
     min-height: 100vh;
     padding: 2rem;
@@ -178,14 +180,15 @@
 .datetimeContainer {
     display: flex;
     flex-wrap: wrap;
-    gap: 1.5rem;
+    gap: 0rem;
+    justify-content: space-between;
 }
 
 .datetimeContainer .inputGroup {
-    flex: 1;
-    min-width: 200px;
+    flex: 0 1 260px;
+    min-width: 420px;
+    max-width: 420px;
 }
-
 
 
 /* --- Location Row --- */
@@ -842,7 +845,12 @@
     }
 
     .datetimeContainer {
-        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .datetimeContainer .inputGroup {
+        flex: 1 1 100%;
+        max-width: 100%;
     }
 
     .gradcamBox {

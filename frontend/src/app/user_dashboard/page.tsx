@@ -134,6 +134,7 @@ export default function UserDashboard() {
   const [hasMoreTransformers, setHasMoreTransformers] = useState(false);
   const [isNewTransformer, setIsNewTransformer] = useState(true); // true = typing new ID, false = selecting existing
   const [showTransformerDropdown, setShowTransformerDropdown] = useState(false);
+  const [existingTransformerSearch, setExistingTransformerSearch] = useState('');
 
   // --- Verification State ---
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -141,6 +142,7 @@ export default function UserDashboard() {
   const [pendingAnalysis, setPendingAnalysis] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [guideLanguage, setGuideLanguage] = useState<'en' | 'ur'>('en');
+  const [now, setNow] = useState<Date>(new Date());
 
   // Load state from sessionStorage and global cache on mount
   useEffect(() => {
@@ -184,6 +186,12 @@ export default function UserDashboard() {
     cachedImages = images;
   }, [images]);
 
+  // Keep current time fresh for date/time max constraints.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   // --- Memoized Values (Hooks MUST be defined before conditional returns) ---
 
   // Hook 1: Determine admin access
@@ -195,6 +203,33 @@ export default function UserDashboard() {
   const getHealthPercentage = useCallback((defectSum: number) => {
     const healthPercentage = Math.max(0, 100 - (defectSum / MAX_DEFECT_SUM) * 100);
     return healthPercentage.toFixed(2);
+  }, []);
+
+  // Hook 3: Fetch existing transformers with pagination and optional server-side prefix search.
+  const fetchTransformers = useCallback(async (page = 1, append = false, search = '') => {
+    setIsLoadingTransformers(true);
+    try {
+      const query = new URLSearchParams({
+        page: String(page),
+        limit: '30',
+        search: search.trim(),
+      });
+      const res = await fetch(`/api/transformers?${query.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (append) {
+          setExistingTransformers(prev => [...prev, ...data.transformers]);
+        } else {
+          setExistingTransformers(data.transformers);
+        }
+        setHasMoreTransformers(data.pagination.hasMore);
+        setTransformerPage(page);
+      }
+    } catch (err) {
+      console.error("Failed to fetch transformers:", err);
+    } finally {
+      setIsLoadingTransformers(false);
+    }
   }, []);
 
   // --- Effects (Hooks MUST be defined before conditional returns) ---
@@ -245,6 +280,17 @@ export default function UserDashboard() {
     }
   }, [hasLoadedStorage, coords, location, locationPermissionDenied]);
 
+  // Effect 3: Debounced server-side search for existing transformer IDs.
+  useEffect(() => {
+    if (isNewTransformer || !showTransformerDropdown) return;
+
+    const timer = setTimeout(() => {
+      fetchTransformers(1, false, existingTransformerSearch);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [isNewTransformer, showTransformerDropdown, existingTransformerSearch, fetchTransformers]);
+
   // --- Conditional Return (Comes AFTER all Hooks) ---
   if (isAuthLoading) return <div className={styles.container}>Loading Dashboard...</div>;
 
@@ -261,31 +307,10 @@ export default function UserDashboard() {
     }
   };
 
-  // Fetch existing transformers with pagination
-  const fetchTransformers = async (page = 1, append = false) => {
-    setIsLoadingTransformers(true);
-    try {
-      const res = await fetch(`/api/transformers?page=${page}&limit=30`);
-      if (res.ok) {
-        const data = await res.json();
-        if (append) {
-          setExistingTransformers(prev => [...prev, ...data.transformers]);
-        } else {
-          setExistingTransformers(data.transformers);
-        }
-        setHasMoreTransformers(data.pagination.hasMore);
-        setTransformerPage(page);
-      }
-    } catch (err) {
-      console.error("Failed to fetch transformers:", err);
-    } finally {
-      setIsLoadingTransformers(false);
-    }
-  };
-
   // Handle selecting an existing transformer
   const handleSelectTransformer = (transformer: { transformerId: string; location: string }) => {
     setTransformerId(transformer.transformerId);
+    setExistingTransformerSearch(transformer.transformerId);
     if (transformer.location) {
       setLocation(transformer.location);
     }
@@ -295,7 +320,7 @@ export default function UserDashboard() {
 
   // Load more transformers for pagination
   const handleLoadMoreTransformers = () => {
-    fetchTransformers(transformerPage + 1, true);
+    fetchTransformers(transformerPage + 1, true, existingTransformerSearch);
   };
 
   const handleLocationAccess = async () => {
@@ -515,6 +540,16 @@ export default function UserDashboard() {
       return;
     }
 
+    const selectedDateTime = new Date(`${date}T${time}`);
+    if (Number.isNaN(selectedDateTime.getTime())) {
+      alert('Please enter a valid date and time.');
+      return;
+    }
+    if (selectedDateTime.getTime() > Date.now()) {
+      alert('Future date/time is not allowed. Please select current or past date/time.');
+      return;
+    }
+
     setIsAnalyzing(true);
     setAnalysisResult(null);
 
@@ -603,6 +638,10 @@ export default function UserDashboard() {
 
 
   // --- RENDER ---
+  const today = now.toISOString().slice(0, 10);
+  const currentTime = now.toTimeString().slice(0, 5);
+  const maxAllowedTime = date === today ? currentTime : undefined;
+
   return (
     <div className={styles.container}>
       <div className={styles.adminButtons}>
@@ -631,7 +670,13 @@ export default function UserDashboard() {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
               <button
                 type="button"
-                onClick={() => { setIsNewTransformer(true); setShowTransformerDropdown(false); setTransformerId(''); setLocation(''); }}
+                onClick={() => {
+                  setIsNewTransformer(true);
+                  setShowTransformerDropdown(false);
+                  setTransformerId('');
+                  setExistingTransformerSearch('');
+                  setLocation('');
+                }}
                 style={{
                   padding: '6px 16px',
                   borderRadius: '20px',
@@ -651,7 +696,7 @@ export default function UserDashboard() {
                 onClick={() => { 
                   setIsNewTransformer(false); 
                   setShowTransformerDropdown(true);
-                  if (existingTransformers.length === 0) fetchTransformers(1);
+                  setExistingTransformerSearch(transformerId);
                 }}
                 style={{
                   padding: '6px 16px',
@@ -682,15 +727,21 @@ export default function UserDashboard() {
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
-                  placeholder="Click to select existing transformer"
-                  value={transformerId}
-                  readOnly
-                  onClick={() => {
-                    setShowTransformerDropdown(!showTransformerDropdown);
-                    if (existingTransformers.length === 0) fetchTransformers(1);
+                  placeholder="Type to search existing transformer ID"
+                  value={existingTransformerSearch}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setExistingTransformerSearch(value);
+                    setTransformerId(value);
+                    if (!showTransformerDropdown) {
+                      setShowTransformerDropdown(true);
+                    }
+                  }}
+                  onFocus={() => {
+                    setShowTransformerDropdown(true);
                   }}
                   className={styles.input}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'text' }}
                 />
                 
                 {/* Dropdown for existing transformers */}
@@ -715,6 +766,12 @@ export default function UserDashboard() {
                     ) : existingTransformers.length === 0 ? (
                       <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>
                         No existing transformers found
+                      </div>
+                    ) : existingTransformers.length === 0 ? (
+                      <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>
+                        {existingTransformerSearch.trim()
+                          ? `No transformer IDs match "${existingTransformerSearch}"`
+                          : 'No existing transformers found'}
                       </div>
                     ) : (
                       <>
@@ -901,9 +958,9 @@ export default function UserDashboard() {
           {/* Date & Time */}
           <div className={styles.datetimeContainer}>
             <div className={styles.inputGroup}><label className={styles.label}><FaCalendarAlt className={styles.icon} /> Date</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={styles.input} /></div>
+              <input type="date" max={today} value={date} onChange={(e) => setDate(e.target.value)} className={styles.input} /></div>
             <div className={styles.inputGroup}><label className={styles.label}><FaClock className={styles.icon} /> Time</label>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={styles.input} /></div>
+              <input type="time" max={maxAllowedTime} value={time} onChange={(e) => setTime(e.target.value)} className={styles.input} /></div>
           </div>
 
           {/* Image Upload */}
