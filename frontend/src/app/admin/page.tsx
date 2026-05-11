@@ -4,9 +4,9 @@
 
 import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter as useNextRouter } from "next/navigation";
-
 import { Shield, User, UserCheck, UserX, Crown, History, LogOut, BarChart3 } from "lucide-react";
 import styles from "./admin.module.css";
+import { useToast, ToastContainer } from "@/app/components/Toast";
 
 // --- Types ---
 type UserRole = "admin" | "user" | "suspended" | "guest";
@@ -60,7 +60,6 @@ const UserRow: React.FC<UserRowProps> = ({ user, onToggleStatus, onToggleRole, o
         onClick={() => onViewHistory(user.id)}
         className={`${styles.btn} ${styles.btnIcon} ${styles.btnHistory}`}
         title="View User History"
-        style={{ color: '#2563eb' }}
       >
         <History size={16} />
       </button>
@@ -72,6 +71,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onToggleStatus, onToggleRole, o
 // --- Main Admin Page Component ---
 export default function AdminPage() {
   const router = useNextRouter();
+  const { toasts, dismiss, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
 
   // --- HOOKS FOR AUTHORIZATION ---
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
@@ -154,7 +154,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isAuthLoading && currentUserRole === 'admin' && !isMasterAdmin && !hasShownPopup) {
-      alert("You can only see this page and individual history button but cant change roles.");
+      toastInfo("View-only mode: you can see this page and individual history, but cannot change roles.");
       setHasShownPopup(true);
     }
   }, [isAuthLoading, currentUserRole, isMasterAdmin, hasShownPopup]);
@@ -177,7 +177,7 @@ export default function AdminPage() {
   // --- HANDLER FUNCTIONS (MODIFIED TO CALL API) ---
   const handleToggleRole = async (userId: number) => {
     if (!isMasterAdmin) {
-      alert("You are not authorized to change roles. Only Master Admin can do this.");
+      toastError("Not authorized. Only Master Admin can change roles.");
       return;
     }
 
@@ -186,7 +186,7 @@ export default function AdminPage() {
     if (!userToUpdate) return;
 
     if (userToUpdate.email === MASTER_ADMIN_EMAIL) {
-      alert("Master Admin role is fixed and cannot be changed.");
+      toastError("Master Admin role is fixed and cannot be changed.");
       return;
     }
 
@@ -208,14 +208,14 @@ export default function AdminPage() {
       await fetchUserList();
 
     } catch (error) {
-      alert(`Error updating role: ${error instanceof Error ? error.message : String(error)}`);
+      toastError(`Role update failed: ${error instanceof Error ? error.message : String(error)}`);
       console.error(error);
     }
   };
 
   const handleToggleStatus = async (userId: number) => {
     if (!isMasterAdmin) {
-      alert("You are not authorized to change status. Only Master Admin can do this.");
+      toastError("Not authorized. Only Master Admin can change status.");
       return;
     }
 
@@ -224,7 +224,7 @@ export default function AdminPage() {
     if (!userToUpdate) return;
 
     if (userToUpdate.email === MASTER_ADMIN_EMAIL) {
-      alert("Master Admin status is fixed and cannot be changed.");
+      toastError("Master Admin status is fixed and cannot be changed.");
       return;
     }
 
@@ -246,7 +246,7 @@ export default function AdminPage() {
       await fetchUserList();
 
     } catch (error) {
-      alert(`Error updating status: ${error instanceof Error ? error.message : String(error)}`);
+      toastError(`Status update failed: ${error instanceof Error ? error.message : String(error)}`);
       console.error(error);
     }
   };
@@ -265,11 +265,11 @@ export default function AdminPage() {
   const handleAddAdmin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isMasterAdmin) {
-      alert("Only Master Admin can grant admin access.");
+      toastError("Only Master Admin can grant admin access.");
       return;
     }
     if (newAdminEmail.trim() === "") {
-      alert("Please enter a valid email address.");
+      toastWarning("Please enter a valid email address.");
       return;
     }
     console.log(`Attempting to grant admin access to ${newAdminEmail}`);
@@ -279,20 +279,20 @@ export default function AdminPage() {
   // --- FINAL RENDER ---
   return (
     <div className={styles.adminContainer}>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <div className={styles.contentWrapper}>
         <header className={styles.headerRow}>
           <div>
             <h1 className={styles.title}>Admin Portal</h1>
             <p className={styles.subtitle}>Welcome, {isMasterAdmin ? userName : 'Admin'}.</p>
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className={styles.headerActions}>
             {/* Show "View All History" button only for Master Admin or general Admin (if allowed by your role logic) */}
             {currentUserRole === 'admin' && (
               <button
                 onClick={handleViewAllHistory}
-                className={`${styles.btn} ${styles.btnPrimary}`}
+                className={`${styles.btn} ${styles.btnGhost}`}
                 title="View All User History Records"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#3b82f6', color: 'white', border: 'none' }}
               >
                 <History size={18} />
                 <span>View All History</span>
@@ -300,14 +300,17 @@ export default function AdminPage() {
             )}
             <button 
               onClick={() => router.push('/user_dashboard')} 
-              className={styles.btn} 
+              className={`${styles.btn} ${styles.btnPrimary}`}
               title="Analyze Transformer" 
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f97316', color: 'white', border: 'none' }}
             >
               <BarChart3 size={18} />
               <span>Analyze</span>
             </button>
-            <button onClick={handleLogout} className={styles.btn} title="Logout" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
+            <button 
+              onClick={handleLogout} 
+              className={`${styles.btn} ${styles.btnDanger}`} 
+              title="Logout"
+            >
               <LogOut size={18} />
               <span>Logout</span>
             </button>
@@ -326,7 +329,7 @@ export default function AdminPage() {
             {isDataLoading ? (
               <div className={styles.loadingContainer}>Loading User List...</div>
             ) : fetchError ? (
-              <p className={styles.errorText} style={{ color: 'red' }}>Error fetching data: {fetchError}. Check your server logs and API import paths.</p>
+              <p className={styles.errorText}>Error fetching data: {fetchError}. Check your server logs and API import paths.</p>
             ) : (
               <div className={styles.userList}>
                 {users.length > 0 ? (

@@ -17,7 +17,7 @@ parser.add_argument(
 )
 args, unknown = parser.parse_known_args()
 TARGET_MODEL = args.model
-print(f"ℹ Using TARGET_MODEL = {TARGET_MODEL}")
+print(f"Using TARGET_MODEL = {TARGET_MODEL}")
 
 
 

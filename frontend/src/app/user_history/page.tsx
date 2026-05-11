@@ -1,417 +1,472 @@
-// user_history/page.tsx - MODIFIED FOR ADMIN SCOPE FETCHING
+// user_history/page.tsx
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import styles from './user_history.module.css';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FaSignOutAlt, FaChartLine, FaCrown } from 'react-icons/fa';
+import {
+  LogOut, LayoutDashboard, Crown, Activity,
+  ChevronLeft, ChevronRight, Loader2,
+  InboxIcon, AlertCircle, ChevronsUpDown,
+} from 'lucide-react';
+import Link from 'next/link';
 
-import {Suspense} from 'react';
-
-// Define possible user roles
-type UserRole = "admin" | "user" | "suspended" | "guest";
+// ── Types ────────────────────────────────────────────────────
+type UserRole = 'admin' | 'user' | 'suspended' | 'guest';
 
 interface HistoryLog {
-    id: number;
-    transformerId: string;
-    location: string;
-    inferenceDate: string;
-    inferenceTime: string;
-    healthIndexScore: number;
-    paramsScores: Record<string, any>;
-    providedImages?: string[];
-    gradCamImages?: string[];
-    status: 'Healthy' | 'Moderate' | 'Critical';
-    feedback?: string;
+  id: number;
+  transformerId: string;
+  location: string;
+  inferenceDate: string;
+  inferenceTime: string;
+  healthIndexScore: number;
+  paramsScores: Record<string, any>;
+  providedImages?: string[];
+  gradCamImages?: string[];
+  status: 'Healthy' | 'Moderate' | 'Critical';
+  feedback?: string;
 }
 
+interface PaginationState {
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+const MASTER_ADMIN_EMAIL = 'junaidasif956@gmail.com';
+
+// ── Helpers ──────────────────────────────────────────────────
+function parseImages(raw: string[] | string | undefined): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try { return JSON.parse(raw); } catch { return [raw]; }
+}
+
+function statusClass(status: string) {
+  if (status === 'Healthy')  return styles.green;
+  if (status === 'Moderate') return styles.yellow;
+  return styles.red;
+}
+
+// ── Inner component ──────────────────────────────────────────
 function HistoryPageInner() {
-    const router = useRouter();
-    const searchParams = useSearchParams(); // Use this hook to get URL parameters
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const targetUserId = searchParams.get('userId');
+  const scope = searchParams.get('scope');
 
-    const targetUserId = searchParams.get('userId'); // Specific user history requested
-    const scope = searchParams.get('scope'); // 'all' history requested
+  const [logs, setLogs] = useState<HistoryLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [filter, setFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationState>({
+    totalCount: 0, page: 1, limit: 10, totalPages: 1, hasMore: false,
+  });
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-    const [logs, setLogs] = useState<HistoryLog[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [fetchError, setFetchError] = useState<string | null>(null);
-    const [filter, setFilter] = useState('');
-    const [dateFilter, setDateFilter] = useState('');
-
-    // Pagination State
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pagination, setPagination] = useState({
-        totalCount: 0,
-        page: 1,
-        limit: 10,
-        totalPages: 1,
-        hasMore: false
-    });
-
-    // --- STATE FOR AUTHORIZATION ---
-    const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-    const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
-    const [isAuthLoading, setIsAuthLoading] = useState(true);
-    const MASTER_ADMIN_EMAIL = "junaidasif956@gmail.com";
-    // ------------------------------------
-
-    // MODIFIED: Function to fetch history data based on access scope
-    const fetchHistoryData = async (role: UserRole, email: string | null, page = 1) => {
-        setLoading(true);
-        setFetchError(null);
-
-        const isGlobalAdmin = role === "admin" || email === MASTER_ADMIN_EMAIL;
-        let apiUrl = `/api/history?page=${page}&limit=10`; // Default: fetch current user's history with pagination
-
-        if (isGlobalAdmin) {
-            // Admin is requesting a specific scope
-            if (targetUserId) {
-                // Admin viewing a specific user
-                apiUrl = `/api/admin/history?userId=${targetUserId}&page=${page}&limit=10`;
-            } else if (scope === 'all') {
-                // Admin viewing all history
-                apiUrl = `/api/admin/history?scope=all&page=${page}&limit=10`;
-            }
-        }
-
-        try {
-            const res = await fetch(apiUrl, { cache: "no-store" });
-
-            if (res.status === 401) {
-                router.replace("/login");
-                return;
-            }
-
-            if (!res.ok) {
-                let errorData = {};
-                try { errorData = await res.json(); } catch { }
-                const errorMessage = (errorData as any).error || `Server error (Status: ${res.status})`;
-                throw new Error(errorMessage);
-            }
-
-            const data = await res.json();
-            // The API now returns { logs: [], pagination: {} }
-            if (data.logs && data.pagination) {
-                setLogs(data.logs);
-                setPagination(data.pagination);
-                setCurrentPage(data.pagination.page);
-            } else {
-                // Fallback for old API format if it still exists elsewhere
-                setLogs(Array.isArray(data) ? data : []);
-            }
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "Failed to load history.";
-            setFetchError(errorMessage);
-            console.error("History fetch error:", error);
-            setLogs([]);
-        } finally {
-            setLoading(false);
-        }
+  // ── Fetch history ────────────────────────────────────────
+  const fetchHistoryData = async (role: UserRole, email: string | null, page = 1) => {
+    setLoading(true);
+    setFetchError(null);
+    const isAdmin = role === 'admin' || email === MASTER_ADMIN_EMAIL;
+    let apiUrl = `/api/history?page=${page}&limit=10`;
+    if (isAdmin) {
+      if (targetUserId) apiUrl = `/api/admin/history?userId=${targetUserId}&page=${page}&limit=10`;
+      else if (scope === 'all') apiUrl = `/api/admin/history?scope=all&page=${page}&limit=10`;
     }
-
-
-    // --- Authorization Check Effect (CRITICALLY MODIFIED) ---
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const res = await fetch("/api/user/role");
-                const data = await res.json();
-                const role: UserRole = data.role;
-                const email: string | null = data.email;
-                const id: number | null = data.id || null;
-
-                setCurrentUserRole(role);
-                setCurrentUserEmail(email);
-
-                const isGlobalAdmin = role === "admin" || email === MASTER_ADMIN_EMAIL;
-
-                if (!isGlobalAdmin) {
-                    router.replace("/user_dashboard");
-                    return;
-                }
-
-                // If authorized, proceed to fetch data
-                setIsAuthLoading(false);
-                fetchHistoryData(role, email);
-
-            } catch (error) {
-                console.error("Error fetching user role:", error);
-                router.replace("/login"); // Redirect to login on API failure
-            }
-        };
-        checkAuth();
-
-    }, [router, targetUserId, scope]); // Include query parameters in dependency array
-
-    if (isAuthLoading) {
-        return <div className={styles.container}>Checking Access Permissions...</div>;
+    try {
+      const res = await fetch(apiUrl, { cache: 'no-store' });
+      if (res.status === 401) { router.replace('/login'); return; }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error || `Server error (${res.status})`);
+      }
+      const data = await res.json();
+      if (data.logs && data.pagination) {
+        setLogs(data.logs);
+        setPagination(data.pagination);
+        setCurrentPage(data.pagination.page);
+      } else {
+        setLogs(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : 'Failed to load history.');
+      setLogs([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const handleLogout = async () => {
-        try {
-            await fetch('/api/logout', { method: 'POST' });
-            router.replace('/login');
-        } catch (error) {
-            console.error('Logout failed', error);
-            router.replace('/login');
-        }
+  // ── Auth check ───────────────────────────────────────────
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/user/role');
+        const data = await res.json();
+        const role: UserRole = data.role;
+        const email: string | null = data.email;
+        setCurrentUserRole(role);
+        setCurrentUserEmail(email);
+        const isAdmin = role === 'admin' || email === MASTER_ADMIN_EMAIL;
+        if (!isAdmin) { router.replace('/user_dashboard'); return; }
+        setIsAuthLoading(false);
+        fetchHistoryData(role, email);
+      } catch {
+        router.replace('/login');
+      }
     };
+    checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, targetUserId, scope]);
 
-    const filteredLogs = logs.filter((log) => {
-        const matchesFilter =
-            filter === '' ||
-            log.transformerId.toLowerCase().includes(filter.toLowerCase()) ||
-            log.location.toLowerCase().includes(filter.toLowerCase());
-        const matchesDate = !dateFilter || log.inferenceDate === dateFilter;
-        return matchesFilter && matchesDate;
-    });
+  const handleLogout = async () => {
+    try { await fetch('/api/logout', { method: 'POST' }); } catch { /* no-op */ }
+    router.replace('/login');
+  };
 
-    // Determine the title based on context
-    const pageTitle = (scope === 'all' && currentUserRole === 'admin') ? "All Transformer Health History (Admin View)" :
-        (targetUserId && currentUserRole === 'admin') ? `History for User ID: ${targetUserId} (Admin View)` :
-            "My Transformer Health History";
+  // ── Derived state ────────────────────────────────────────
+  const filteredLogs = logs.filter((log) => {
+    const matchesText =
+      !filter ||
+      log.transformerId.toLowerCase().includes(filter.toLowerCase()) ||
+      log.location.toLowerCase().includes(filter.toLowerCase());
+    const matchesDate = !dateFilter || log.inferenceDate === dateFilter;
+    return matchesText && matchesDate;
+  });
 
-    const pageSubtitle = (scope === 'all' && currentUserRole === 'admin') ? "Review all records from every user." :
-        (targetUserId && currentUserRole === 'admin') ? "Review this user's specific records." :
-            "Track Your Health Index History Records";
+  const isAdmin = currentUserRole === 'admin' || currentUserEmail === MASTER_ADMIN_EMAIL;
 
+  const pageTitle =
+    scope === 'all' && isAdmin   ? 'All Transformer History' :
+    targetUserId  && isAdmin     ? `History — User #${targetUserId}` :
+                                   'Transformer Health History';
 
+  const pageSubtitle =
+    scope === 'all' && isAdmin   ? 'Complete inspection records from all users.' :
+    targetUserId  && isAdmin     ? 'Inspection records for this specific user.' :
+                                   'Your inspection log with scores and Grad-CAM images.';
+
+  // ── Auth loading ─────────────────────────────────────────
+  if (isAuthLoading) {
     return (
-        <div className={styles.container}>
-            {/* Header Row with Legend and Filters */}
-            <div className={styles.headerRow}>
-                <div className={styles.legend}>
-                    <span className={styles.legendTitle}>Health Status:</span>
-                    <span
-                        className={`${styles.legendDot} ${styles.green}`}
-                        data-tooltip="Healthy: Transformer operating optimally"
-                    ></span>
-                    <span
-                        className={`${styles.legendDot} ${styles.yellow}`}
-                        data-tooltip="Moderate: Slight anomalies detected"
-                    ></span>
-                    <span
-                        className={`${styles.legendDot} ${styles.red}`}
-                        data-tooltip="Critical: Requires urgent attention"
-                    ></span>
-                </div>
+      <div className={styles.page}>
+        <div className={styles.wrapper}>
+          <div className={styles.stateBox}>
+            <div className={`${styles.stateIcon} ${styles.stateIconLoading}`}>
+              <div className={styles.spinnerRing} />
+            </div>
+            <p className={styles.stateTitle}>Checking permissions…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-                <div className={styles.filters}>
-                    <input
-                        type="text"
-                        placeholder="Filter by Transformer ID / Location"
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className={styles.filterInput}
-                    />
-                    <input
-                        type="date"
-                        value={dateFilter}
-                        onChange={(e) => setDateFilter(e.target.value)}
-                        className={styles.datePicker}
-                    />
-                    <button onClick={handleLogout} className={styles.logoutButton} title="Logout" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '1rem' }}>
-                        <FaSignOutAlt size={16} />
-                        <span>Logout</span>
-                    </button>
-                    <button onClick={() => router.push('/user_dashboard')} title="Analyze Transformer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: '#f97316', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '0.5rem' }}>
-                        <FaChartLine size={16} />
-                        <span>Analyze</span>
-                    </button>
-                    {(currentUserRole === 'admin' || currentUserEmail === MASTER_ADMIN_EMAIL) && (
-                        <button onClick={() => router.push('/admin')} title="Admin Portal" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '0.5rem' }}>
-                            <FaCrown size={16} />
-                            <span>Admin</span>
-                        </button>
-                    )}
-                </div>
+  // ── Render ───────────────────────────────────────────────
+  return (
+    <div className={styles.page}>
+      <div className={styles.wrapper}>
+
+        {/* ── Top nav bar ── */}
+        <nav className={styles.topNav}>
+          <Link href="/" className={styles.navBrand}>
+            <div className={styles.navBrandMark}>
+              <Activity size={16} />
+            </div>
+            <span className={styles.navBrandText}>Health Indexer</span>
+          </Link>
+
+          <div className={styles.navActions}>
+            <button
+              onClick={() => router.push('/user_dashboard')}
+              className={`${styles.navBtn} ${styles.navBtnAnalyze}`}
+              title="Analyze Transformer"
+            >
+              <LayoutDashboard size={15} />
+              <span>Dashboard</span>
+            </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => router.push('/admin')}
+                className={`${styles.navBtn} ${styles.navBtnAdmin}`}
+                title="Admin Portal"
+              >
+                <Crown size={15} />
+                <span>Admin</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className={`${styles.navBtn} ${styles.navBtnLogout}`}
+              title="Logout"
+            >
+              <LogOut size={15} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </nav>
+
+        {/* ── Page header ── */}
+        <header className={styles.pageHeader}>
+          <p className={styles.pageTag}>Inspection Records</p>
+          <h1 className={styles.pageTitle}>{pageTitle}</h1>
+          <p className={styles.pageSubtitle}>{pageSubtitle}</p>
+        </header>
+
+        {/* ── Toolbar ── */}
+        <div className={styles.toolbar}>
+          <div className={styles.filterGroup}>
+            <input
+              type="text"
+              placeholder="Search by ID or location…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className={styles.filterInput}
+              aria-label="Filter by transformer ID or location"
+            />
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className={styles.datePicker}
+              aria-label="Filter by date"
+            />
+          </div>
+
+          {/* Status legend as labeled pills */}
+          <div className={styles.legend} aria-label="Status legend">
+            <div className={`${styles.legendPill} ${styles.green}`}>
+              <span className={styles.legendDot} />
+              Healthy
+            </div>
+            <div className={`${styles.legendPill} ${styles.yellow}`}>
+              <span className={styles.legendDot} />
+              Moderate
+            </div>
+            <div className={`${styles.legendPill} ${styles.red}`}>
+              <span className={styles.legendDot} />
+              Critical
+            </div>
+          </div>
+        </div>
+
+        {/* ── Content ── */}
+        {fetchError ? (
+          <div className={styles.stateBox}>
+            <div className={`${styles.stateIcon} ${styles.stateIconError}`}>
+              <AlertCircle size={22} />
+            </div>
+            <p className={styles.stateTitle}>Failed to load history</p>
+            <p className={styles.stateDesc}>{fetchError}</p>
+          </div>
+        ) : loading ? (
+          <div className={styles.stateBox}>
+            <div className={`${styles.stateIcon} ${styles.stateIconLoading}`}>
+              <div className={styles.spinnerRing} />
+            </div>
+            <p className={styles.stateTitle}>Loading records…</p>
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className={styles.stateBox}>
+            <div className={`${styles.stateIcon} ${styles.stateIconEmpty}`}>
+              <InboxIcon size={22} />
+            </div>
+            <p className={styles.stateTitle}>No records found</p>
+            <p className={styles.stateDesc}>
+              {filter || dateFilter
+                ? 'Try adjusting your search filters.'
+                : 'No inspection history yet. Run an analysis from the dashboard.'}
+            </p>
+          </div>
+        ) : (
+          <div className={styles.tableContainer}>
+            <div className={styles.tableScroll}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Transformer ID</th>
+                    <th>Location</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>H. Index</th>
+                    <th>Status</th>
+                    <th>Grad-CAM</th>
+                    <th>Parameters</th>
+                    <th>Feedback</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLogs.map((log) => {
+                    const gradCams = parseImages(log.gradCamImages);
+                    const inputImgs = parseImages(log.providedImages);
+                    const sc = statusClass(log.status);
+
+                    return (
+                      <tr key={log.id}>
+                        {/* Transformer ID */}
+                        <td className={styles.idCell}>{log.transformerId}</td>
+
+                        {/* Location */}
+                        <td
+                          className={styles.locationCell}
+                          title={log.location}
+                        >
+                          {log.location}
+                        </td>
+
+                        {/* Date */}
+                        <td className={styles.dateCell}>{log.inferenceDate}</td>
+
+                        {/* Time */}
+                        <td className={styles.timeCell}>{log.inferenceTime}</td>
+
+                        {/* Health Index Score */}
+                        <td className={styles.scoreCell}>
+                          <span className={styles.scoreValue}>
+                            {log.healthIndexScore}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td>
+                          <span className={`${styles.statusBadge} ${sc}`}>
+                            <span className={styles.statusDot} />
+                            {log.status}
+                          </span>
+                        </td>
+
+
+
+                        {/* Grad-CAM */}
+                        <td>
+                          {gradCams.length > 0 ? (
+                            <div className={styles.thumbRow}>
+                              {gradCams.map((raw, i) => {
+                                const rawStr = typeof raw === 'string' ? raw : '';
+                                const src = rawStr.trim()
+                                  ? rawStr.startsWith('http') || rawStr.startsWith('/')
+                                    ? rawStr : `/${rawStr}`
+                                  : null;
+                                return src ? (
+                                  <img
+                                    key={i}
+                                    src={src}
+                                    alt={`Grad-CAM ${i + 1}`}
+                                    className={styles.thumb}
+                                    onClick={() => window.open(src, '_blank')}
+                                    title="Click to open full size"
+                                  />
+                                ) : null;
+                              })}
+                            </div>
+                          ) : (
+                            <span className={styles.noData}>—</span>
+                          )}
+                        </td>
+
+                        {/* Parameters */}
+                        <td>
+                          <details className={styles.paramsDetails}>
+                            <summary className={styles.paramsSummary}>
+                              <ChevronsUpDown size={12} />
+                              View ({Object.keys(log.paramsScores).length})
+                            </summary>
+                            <div className={styles.paramsDropdown}>
+                              {Object.entries(log.paramsScores).map(([param, scoreInfo]) => {
+                                let val = scoreInfo;
+                                if (typeof scoreInfo === 'object' && scoreInfo !== null && 'score' in scoreInfo) {
+                                  val = scoreInfo.score;
+                                }
+                                return (
+                                  <div key={param} className={styles.paramRow}>
+                                    <span className={styles.paramName}>
+                                      {param.replace(/_/g, ' ')}
+                                    </span>
+                                    <span className={styles.paramScore}>
+                                      {typeof val === 'number' ? val.toFixed(2) : String(val)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </details>
+                        </td>
+
+                        {/* Feedback */}
+                        <td
+                          className={styles.feedbackCell}
+                          title={log.feedback || undefined}
+                        >
+                          {log.feedback || <span className={styles.noData}>—</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            <h1 className={styles.title}>{pageTitle}</h1>
-            <p className={styles.subtitle}>{pageSubtitle}</p>
-
-            {fetchError ? (
-                // Display error message
-                <p className={styles.error} style={{ color: 'red', textAlign: 'center', marginTop: '20px' }}>Error: {fetchError}</p>
-            ) : loading ? (
-                <p className={styles.loading}>Loading history...</p>
-            ) : filteredLogs.length === 0 ? (
-                <p className={styles.empty}>No matching history found.</p>
-            ) : (
-                <div className={styles.tableContainer}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Transformer ID</th>
-                                <th>Location</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Health Index</th>
-                                <th>Status</th>
-                                <th>Input Images</th>
-                                <th>Grad-CAM</th>
-                                <th>Parameters</th>
-                                <th>Feedback</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredLogs.map((log) => {
-                                let gradCams: any[] = [];
-                                if (Array.isArray(log.gradCamImages)) {
-                                    gradCams = log.gradCamImages;
-                                } else if (typeof log.gradCamImages === 'string') {
-                                    try { gradCams = JSON.parse(log.gradCamImages); } catch(e) { gradCams = [log.gradCamImages]; }
-                                }
-                                if (!Array.isArray(gradCams)) gradCams = [];
-
-                                let providedImgs: any[] = [];
-                                if (Array.isArray(log.providedImages)) {
-                                    providedImgs = log.providedImages;
-                                } else if (typeof log.providedImages === 'string') {
-                                    try { providedImgs = JSON.parse(log.providedImages); } catch(e) { providedImgs = [log.providedImages]; }
-                                }
-                                if (!Array.isArray(providedImgs)) providedImgs = [];
-
-                                return (
-                                <tr key={log.id}>
-                                    <td>{log.transformerId}</td>
-                                    <td className={styles.locationCell}>{log.location}</td>
-                                    <td>{log.inferenceDate}</td>
-                                    <td>{log.inferenceTime}</td>
-                                    <td className={styles.healthCell}>
-                                        <strong>{log.healthIndexScore}</strong>
-                                    </td>
-                                    <td>
-                                        <span
-                                            className={`${styles.statusBadge} ${log.status === 'Healthy'
-                                                ? styles.green
-                                                : log.status === 'Moderate'
-                                                    ? styles.yellow
-                                                    : styles.red
-                                                }`}
-                                            title={
-                                                log.status === 'Healthy'
-                                                    ? 'Transformer operating optimally'
-                                                    : log.status === 'Moderate'
-                                                        ? 'Slight anomalies detected'
-                                                        : 'Transformer requires urgent attention'
-                                            }
-                                        >
-                                            {log.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {providedImgs.length > 0 ? (
-                                            <div className={styles.imageThumbContainer}>
-                                                {providedImgs.map((img, idx) => {
-                                                    const imgSrc = typeof img === 'string' && img.trim() !== '' ? img : null;
-                                                    return imgSrc ? (
-                                                        <img
-                                                            key={idx}
-                                                            src={imgSrc}
-                                                            alt={`input-${idx}`}
-                                                            className={styles.imageThumb}
-                                                            onClick={() => window.open(imgSrc, '_blank')}
-                                                        />
-                                                    ) : null;
-                                                })}
-                                            </div>
-                                        ) : (
-                                            <span className={styles.noData}>—</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        {gradCams.length > 0 ? (
-                                            <div className={styles.imageThumbContainer}>
-                                                {gradCams.map((img, idx) => {
-                                                    const imgStr = typeof img === 'string' ? img.trim() : '';
-                                                    const imgUrl = imgStr 
-                                                        ? (imgStr.startsWith('http') || imgStr.startsWith('/') ? imgStr : `/${imgStr}`)
-                                                        : null;
-                                                    return imgUrl ? (
-                                                        <img
-                                                            key={idx}
-                                                            src={imgUrl}
-                                                            alt={`gradcam-${idx}`}
-                                                            className={styles.imageThumb}
-                                                            onClick={() => window.open(imgUrl, '_blank')}
-                                                        />
-                                                    ) : null;
-                                                })}
-                                            </div>
-                                        ) : (
-                                            <span className={styles.noData}>—</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <details className={styles.paramsDetails}>
-                                            <summary className={styles.paramsSummary}>
-                                                View ({Object.keys(log.paramsScores).length})
-                                            </summary>
-                                            <div className={styles.paramsDropdown}>
-                                                {Object.entries(log.paramsScores).map(([param, scoreInfo]) => {
-                                                    // Handle object that might contain 'score' (like {name, score, requiredAction})
-                                                    let scoreValue = scoreInfo;
-                                                    if (typeof scoreInfo === 'object' && scoreInfo !== null && 'score' in scoreInfo) {
-                                                        scoreValue = scoreInfo.score;
-                                                    }
-                                                    return (
-                                                        <div key={param} className={styles.paramRow}>
-                                                            <span className={styles.paramName}>{param.replace(/_/g, ' ')}</span>
-                                                            <span className={styles.paramScore}>{typeof scoreValue === 'number' ? scoreValue.toFixed(2) : String(scoreValue)}</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </details>
-                                    </td>
-                                    <td className={styles.feedbackCell} style={{ maxWidth: '200px', whiteSpace: 'pre-wrap' }}>
-                                        {log.feedback ? (
-                                            <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
-                                                {log.feedback}
-                                            </div>
-                                        ) : <span className={styles.noData}>—</span>}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                        </tbody>
-                    </table>
-
-                    {/* Pagination Controls */}
-                    <div className={styles.pagination}>
-                        <div className={styles.paginationInfo}>
-                            Showing <strong>{logs.length}</strong> of <strong>{pagination.totalCount}</strong> records | Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong>
-                        </div>
-                        <div className={styles.paginationControls}>
-                            <button 
-                                className={styles.pageButton} 
-                                onClick={() => fetchHistoryData(currentUserRole!, currentUserEmail, currentPage - 1)}
-                                disabled={currentPage <= 1 || loading}
-                            >
-                                Previous
-                            </button>
-                            <button 
-                                className={`${styles.pageButton} ${styles.primary}`}
-                                onClick={() => fetchHistoryData(currentUserRole!, currentUserEmail, currentPage + 1)}
-                                disabled={currentPage >= pagination.totalPages || loading}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+            {/* ── Pagination ── */}
+            <div className={styles.pagination}>
+              <p className={styles.paginationInfo}>
+                Showing <strong>{logs.length}</strong> of{' '}
+                <strong>{pagination.totalCount}</strong> records &middot; Page{' '}
+                <strong>{pagination.page}</strong> of{' '}
+                <strong>{pagination.totalPages}</strong>
+              </p>
+              <div className={styles.paginationControls}>
+                <button
+                  className={styles.pageBtn}
+                  onClick={() =>
+                    fetchHistoryData(currentUserRole!, currentUserEmail, currentPage - 1)
+                  }
+                  disabled={currentPage <= 1 || loading}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={15} />
+                  Previous
+                </button>
+                <button
+                  className={styles.pageBtn}
+                  onClick={() =>
+                    fetchHistoryData(currentUserRole!, currentUserEmail, currentPage + 1)
+                  }
+                  disabled={currentPage >= pagination.totalPages || loading}
+                  aria-label="Next page"
+                >
+                  Next
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
+// ── Page export ──────────────────────────────────────────────
 export default function HistoryPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <HistoryPageInner />
-        </Suspense>
-    );
+  return (
+    <Suspense
+      fallback={
+        <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem' }}>
+          Loading…
+        </div>
+      }
+    >
+      <HistoryPageInner />
+    </Suspense>
+  );
 }

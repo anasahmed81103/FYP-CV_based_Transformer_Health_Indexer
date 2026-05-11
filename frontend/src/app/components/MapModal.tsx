@@ -58,7 +58,7 @@ export default function MapModal({ onClose, onLocationSelect, currentCoords }: M
 
   const handleConfirm = async () => {
     if (!position) {
-      alert('Please select a location first.');
+      setErrorMessage('Please select a location on the map first.');
       return;
     }
     const addr = await getAddressFromCoords(position[0], position[1]);

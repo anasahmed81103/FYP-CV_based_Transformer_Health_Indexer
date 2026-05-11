@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useToast, ToastContainer } from '@/app/components/Toast';
 import {
   FaPlus,
   FaMapMarkerAlt,
@@ -93,6 +94,7 @@ const getRequiredAction = (componentName: string, score: number): string => {
 
 export default function UserDashboard() {
   const router = useRouter();
+  const { toasts, dismiss, success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
 
   // --- Authorization State ---
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
@@ -325,7 +327,7 @@ export default function UserDashboard() {
 
   const handleLocationAccess = async () => {
     if (!navigator.geolocation) {
-      alert("Geolocation not supported.");
+      toastWarning("Geolocation not supported by your browser.");
       return;
     }
     setShowLocationPrompt(false);
@@ -346,8 +348,10 @@ export default function UserDashboard() {
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
           setLocationPermissionDenied(true);
-          alert("Location access denied. Enable it in browser settings.");
-        } else alert("Unable to access location. Try again.");
+          toastError("Location access denied. Enable it in browser settings.");
+        } else {
+          toastError("Unable to access location. Try again.");
+        }
         setShowLocationPrompt(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -364,7 +368,7 @@ export default function UserDashboard() {
     // Check if browser supports speech recognition
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Your browser does not support Speech Recognition. Please type your feedback.");
+      toastWarning("Speech recognition not supported. Please type your feedback.");
       return;
     }
 
@@ -385,7 +389,7 @@ export default function UserDashboard() {
     recognition.onerror = (event: any) => {
       console.error("Speech recognition error", event.error);
       setIsRecording(false);
-      alert("Microphone error: " + event.error);
+      toastError("Microphone error: " + event.error);
     };
 
     recognition.onend = () => {
@@ -449,7 +453,7 @@ export default function UserDashboard() {
         return { proceed: false, requiresConfirmation: true, score: verifyResult.score };
       } else {
         // reject
-        alert(`❌ ${verifyResult.message}`);
+        toastError(verifyResult.message);
         return { proceed: false, requiresConfirmation: false, score: verifyResult.score };
       }
     } catch (err) {
@@ -479,7 +483,7 @@ export default function UserDashboard() {
       // Handle duplicate transformer ID error
       if (res.status === 409) {
         const errData = await res.json();
-        alert(`⚠️ ${errData.message || 'Transformer ID already exists. Please select from existing records.'}`);
+        toastWarning(errData.message || 'Transformer ID already exists. Please select from existing records.');
         setIsAnalyzing(false);
         return;
       }
@@ -491,9 +495,9 @@ export default function UserDashboard() {
 
       // Show appropriate success message based on database action
       if (data.dbAction === 'updated') {
-        alert('✅ Transformer information updated successfully!');
+        toastSuccess('Transformer information updated successfully.');
       } else if (data.dbAction === 'created') {
-        alert('✅ New transformer record created successfully!');
+        toastSuccess('New transformer record created successfully.');
       }
 
       const nonPmt = (data.predictions || [])
@@ -528,7 +532,7 @@ export default function UserDashboard() {
 
     } catch (err: any) {
       console.error('Analysis failed:', err);
-      alert('Failed to analyze transformer images. Check backend server and console logs.');
+      toastError('Analysis failed. Check backend server and console logs.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -536,17 +540,17 @@ export default function UserDashboard() {
 
   const handleAnalyze = async () => {
     if (!transformerId.trim() || !location || !date || !time || images.length === 0) {
-      alert('Please fill all fields and upload at least one image.');
+      toastWarning('Please fill all fields and upload at least one image.');
       return;
     }
 
     const selectedDateTime = new Date(`${date}T${time}`);
     if (Number.isNaN(selectedDateTime.getTime())) {
-      alert('Please enter a valid date and time.');
+      toastWarning('Please enter a valid date and time.');
       return;
     }
     if (selectedDateTime.getTime() > Date.now()) {
-      alert('Future date/time is not allowed. Please select current or past date/time.');
+      toastWarning('Future date/time is not allowed. Please select current or past date/time.');
       return;
     }
 
@@ -627,11 +631,11 @@ export default function UserDashboard() {
         prev ? prev.map(p => ({ ...p })) : prev
       );
 
-      alert('✅ Corrected scores applied successfully!');
+      toastSuccess('Corrected scores applied successfully.');
 
     } catch (err) {
       console.error(err);
-      alert('❌ Error submitting corrected scores.');
+      toastError('Error submitting corrected scores. Please try again.');
     }
   };
 
@@ -644,21 +648,25 @@ export default function UserDashboard() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.adminButtons}>
-        <button onClick={() => setShowGuide(true)} className={styles.adminButton}><FaBookOpen size={16} /><span>Guide</span></button>
-        {canAccessAdminTools && (
-          <>
-            <Link href="/user_history" className={styles.historyButton}><FaHistory size={16} /><span>History</span></Link>
-            <Link href="/admin" className={styles.adminButton}><FaCrown size={16} /><span>Admin Page</span></Link>
-          </>
-        )}
-        <button onClick={handleLogout} className={styles.adminButton}><FaSignOutAlt size={16} /><span>Logout</span></button>
-      </div>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
-      <div className={styles.header}>
-        <h1 className={styles.title}>Transformer Health Dashboard</h1>
-        <p className={styles.subtitle}>AI-powered Transformer Condition Analysis</p>
-      </div>
+      {/* Top Navigation Bar */}
+      <nav className={styles.topNav}>
+        <div className={styles.navBrand}>
+          <h1 className={styles.title}>Transformer Health Dashboard</h1>
+          <p className={styles.subtitle}>AI-powered Transformer Condition Analysis</p>
+        </div>
+        <div className={styles.navActions}>
+          <button onClick={() => setShowGuide(true)} className={styles.navBtn}><FaBookOpen size={14} /><span>Guide</span></button>
+          {canAccessAdminTools && (
+            <>
+              <Link href="/user_history" className={`${styles.navBtn} ${styles.navBtnAccent}`}><FaHistory size={14} /><span>History</span></Link>
+              <Link href="/admin" className={styles.navBtn}><FaCrown size={14} /><span>Admin</span></Link>
+            </>
+          )}
+          <button onClick={handleLogout} className={`${styles.navBtn} ${styles.navBtnDanger}`}><FaSignOutAlt size={14} /><span>Logout</span></button>
+        </div>
+      </nav>
 
       <div className={styles.card}>
         <div className={styles.formSection}>
@@ -667,7 +675,7 @@ export default function UserDashboard() {
             <label className={styles.label}><FaBolt className={styles.icon} /> Transformer ID <span className={styles.required}>*</span></label>
             
             {/* Toggle buttons for New/Existing */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <div className={styles.toggleGroup}>
               <button
                 type="button"
                 onClick={() => {
@@ -677,17 +685,7 @@ export default function UserDashboard() {
                   setExistingTransformerSearch('');
                   setLocation('');
                 }}
-                style={{
-                  padding: '6px 16px',
-                  borderRadius: '20px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  backgroundColor: isNewTransformer ? '#f97316' : '#e5e7eb',
-                  color: isNewTransformer ? 'white' : '#374151',
-                  transition: 'all 0.2s'
-                }}
+                className={`${styles.toggleBtn} ${isNewTransformer ? styles.toggleBtnActive : styles.toggleBtnInactive}`}
               >
                 New Transformer
               </button>
@@ -698,17 +696,7 @@ export default function UserDashboard() {
                   setShowTransformerDropdown(true);
                   setExistingTransformerSearch(transformerId);
                 }}
-                style={{
-                  padding: '6px 16px',
-                  borderRadius: '20px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  backgroundColor: !isNewTransformer ? '#f97316' : '#e5e7eb',
-                  color: !isNewTransformer ? 'white' : '#374151',
-                  transition: 'all 0.2s'
-                }}
+                className={`${styles.toggleBtn} ${!isNewTransformer ? styles.toggleBtnActive : styles.toggleBtnInactive}`}
               >
                 Select Existing
               </button>
@@ -724,7 +712,7 @@ export default function UserDashboard() {
                 className={styles.input} 
               />
             ) : (
-              <div style={{ position: 'relative' }}>
+              <div className={styles.searchContainer}>
                 <input
                   type="text"
                   placeholder="Type to search existing transformer ID"
@@ -746,29 +734,13 @@ export default function UserDashboard() {
                 
                 {/* Dropdown for existing transformers */}
                 {showTransformerDropdown && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    maxHeight: '250px',
-                    overflowY: 'auto',
-                    zIndex: 1000,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                  }}>
+                  <div className={styles.dropdownMenu}>
                     {isLoadingTransformers && existingTransformers.length === 0 ? (
-                      <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>
+                      <div className={styles.dropdownEmpty}>
                         Loading transformers...
                       </div>
                     ) : existingTransformers.length === 0 ? (
-                      <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>
-                        No existing transformers found
-                      </div>
-                    ) : existingTransformers.length === 0 ? (
-                      <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280' }}>
+                      <div className={styles.dropdownEmpty}>
                         {existingTransformerSearch.trim()
                           ? `No transformer IDs match "${existingTransformerSearch}"`
                           : 'No existing transformers found'}
@@ -779,17 +751,10 @@ export default function UserDashboard() {
                           <div
                             key={`${t.transformerId}-${idx}`}
                             onClick={() => handleSelectTransformer(t)}
-                            style={{
-                              padding: '10px 14px',
-                              cursor: 'pointer',
-                              borderBottom: '1px solid #f3f4f6',
-                              transition: 'background-color 0.15s'
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+                            className={styles.dropdownItem}
                           >
-                            <div style={{ fontWeight: 600, color: '#1f2937', fontSize: '14px' }}>{t.transformerId}</div>
-                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div className={styles.dropdownItemTitle}>{t.transformerId}</div>
+                            <div className={styles.dropdownItemSub}>
                               {t.location || 'No location'}
                             </div>
                           </div>
@@ -799,16 +764,7 @@ export default function UserDashboard() {
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleLoadMoreTransformers(); }}
                             disabled={isLoadingTransformers}
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              border: 'none',
-                              backgroundColor: '#f3f4f6',
-                              color: '#4b5563',
-                              cursor: 'pointer',
-                              fontSize: '13px',
-                              fontWeight: 500
-                            }}
+                            className={styles.loadMoreBtn}
                           >
                             {isLoadingTransformers ? 'Loading...' : 'Load More'}
                           </button>
@@ -838,67 +794,67 @@ export default function UserDashboard() {
           {/* Guide Modal */}
           {showGuide && (
             <div className={styles.locationPopupOverlay}>
-              <div className={styles.locationPopup} style={{ maxWidth: '600px', textAlign: guideLanguage === 'ur' ? 'right' : 'left', maxHeight: '80vh', overflowY: 'auto', direction: guideLanguage === 'ur' ? 'rtl' : 'ltr' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ color: '#38bdf8', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className={styles.locationPopup} style={{ maxWidth: '650px', textAlign: guideLanguage === 'ur' ? 'right' : 'left', maxHeight: '80vh', overflowY: 'auto', direction: guideLanguage === 'ur' ? 'rtl' : 'ltr' }}>
+                <div className={styles.modalHeader}>
+                  <h3 className={styles.modalTitle}>
                     <FaBookOpen /> {guideLanguage === 'en' ? 'User Guide' : 'صارف گائیڈ'}
                   </h3>
                   <button 
                     onClick={() => setGuideLanguage(guideLanguage === 'en' ? 'ur' : 'en')}
-                    style={{ padding: '4px 12px', borderRadius: '4px', backgroundColor: '#4f46e5', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                    className={styles.modalLangBtn}
                   >
                     {guideLanguage === 'en' ? 'اردو میں پڑھیں' : 'Read in English'}
                   </button>
                 </div>
                 
                 {guideLanguage === 'en' ? (
-                  <div style={{ color: '#d1d5db', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>1. Filling the Form</h4>
-                    <p style={{ marginBottom: '1rem' }}>Enter the Transformer ID (or select an existing one), verify the location, and confirm the date and time. Upload clear images of the transformer components.</p>
+                  <div className={styles.guideContent}>
+                    <h4 className={styles.guideSectionTitle}>1. Filling the Form</h4>
+                    <p className={styles.guideText}>Enter the Transformer ID (or select an existing one), verify the location, and confirm the date and time. Upload clear images of the transformer components.</p>
                     
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>2. Providing Analysis Notes (Feedback)</h4>
-                    <p style={{ marginBottom: '1rem' }}>Click the "Add Analysis Notes" button to type or speak any manual observations, maintenance notes, or specific conditions that the AI should be aware of. This acts as additional context for your inspection.</p>
+                    <h4 className={styles.guideSectionTitle}>2. Providing Analysis Notes (Feedback)</h4>
+                    <p className={styles.guideText}>Click the "Add Analysis Notes" button to type or speak any manual observations, maintenance notes, or specific conditions that the AI should be aware of. This acts as additional context for your inspection.</p>
                     
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>3. Parameter Corrections</h4>
-                    <p>When the AI analysis is complete, you will see the predicted defect scores. If you believe the model predicted incorrectly, you can <strong>manipulate the values</strong> in the "Optional Parameter Corrections" section at the bottom.</p>
-                    <p style={{ marginBottom: '1rem' }}>Adjust the scores and click <strong>"Submit Corrected Scores"</strong>. The results and required actions will immediately update to reflect your expert judgment.</p>
+                    <h4 className={styles.guideSectionTitle}>3. Parameter Corrections</h4>
+                    <p className={styles.guideText}>When the AI analysis is complete, you will see the predicted defect scores. If you believe the model predicted incorrectly, you can <strong>manipulate the values</strong> in the "Optional Parameter Corrections" section at the bottom.</p>
+                    <p className={styles.guideText}>Adjust the scores and click <strong>"Submit Corrected Scores"</strong>. The results and required actions will immediately update to reflect your expert judgment.</p>
                     
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>4. Parameter Defect Score Interpretation</h4>
-                    <p style={{ marginBottom: '0.5rem', fontStyle: 'italic', color: '#9ca3af' }}>Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.</p>
-                    <p style={{ marginBottom: '0.5rem' }}><strong>1 is the Best Parameter Score:</strong> This indicates the component is in "Excellent" or "New" condition with no detectable defects.</p>
-                    <p style={{ marginBottom: '0.5rem' }}><strong>6 is the Worst Parameter Score:</strong> This represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).</p>
-                    <ul style={{ listStyleType: 'disc', marginLeft: '1.5rem', marginBottom: '1rem' }}>
-                      <li><strong>1.0 &ndash; 3.4 (Good / Normal):</strong> No action or minor maintenance needed (e.g., paint, clean, or tighten connections).</li>
-                      <li><strong>3.5 &ndash; 4.4 (Moderate / Fair):</strong> Requires active onsite repair (e.g., welding, oil top-up, or replacement).</li>
-                      <li><strong>4.5 &ndash; 6.0 (Critical / Poor):</strong> Requires immediate attention or being sent to the workshop (TSW) for a full overhaul.</li>
+                    <h4 className={styles.guideSectionTitle}>4. Parameter Defect Score Interpretation</h4>
+                    <p className={styles.guideNote}>Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.</p>
+                    <p className={styles.guideText}><strong>1 is the Best Parameter Score:</strong> This indicates the component is in "Excellent" or "New" condition with no detectable defects.</p>
+                    <p className={styles.guideText}><strong>6 is the Worst Parameter Score:</strong> This represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).</p>
+                    <ul className={styles.guideList}>
+                      <li className={styles.guideListItem}><div className={styles.guideDot}></div><span><strong>1.0 &ndash; 3.4 (Good / Normal):</strong> No action or minor maintenance needed.</span></li>
+                      <li className={styles.guideListItem}><div className={styles.guideDot} style={{background: '#facc15'}}></div><span><strong>3.5 &ndash; 4.4 (Moderate / Fair):</strong> Requires active onsite repair (e.g., welding, oil top-up).</span></li>
+                      <li className={styles.guideListItem}><div className={styles.guideDot} style={{background: '#ef4444'}}></div><span><strong>4.5 &ndash; 6.0 (Critical / Poor):</strong> Requires immediate attention or workshop (TSW).</span></li>
                     </ul>
                   </div>
                 ) : (
-                  <div style={{ color: '#d1d5db', fontSize: '1.0rem', lineHeight: '1.8', fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu, Arial' }}>
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>1. فارم بھرنا</h4>
-                    <p style={{ marginBottom: '1rem' }}>ٹرانسفارمر کی آئی ڈی درج کریں (یا موجودہ منتخب کریں)، مقام، تاریخ اور وقت کی تصدیق کریں۔ ٹرانسفارمر کے حصوں کی واضح تصاویر اپ لوڈ کریں۔</p>
+                  <div className={styles.guideContent} style={{ fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu, Arial', fontSize: '1.05rem', lineHeight: '1.8' }}>
+                    <h4 className={styles.guideSectionTitle}>1. فارم بھرنا</h4>
+                    <p className={styles.guideText}>ٹرانسفارمر کی آئی ڈی درج کریں (یا موجودہ منتخب کریں)، مقام، تاریخ اور وقت کی تصدیق کریں۔ ٹرانسفارمر کے حصوں کی واضح تصاویر اپ لوڈ کریں۔</p>
                     
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>2. تجزیاتی نوٹس (فیڈبیک) فراہم کرنا</h4>
-                    <p style={{ marginBottom: '1rem' }}>'تجزیاتی نوٹس شامل کریں' پر کلک کریں اور کوئی بھی دستی مشاہدہ، دیکھ بھال کا نوٹ یا مخصوص حالات ٹائپ کریں یا بول کر بتائیں جس کا AI کو علم ہونا چاہیے۔ یہ آپ کے معائنے کے لیے اضافی سیاق و سباق کے طور پر کام کرتا ہے۔</p>
+                    <h4 className={styles.guideSectionTitle}>2. تجزیاتی نوٹس (فیڈبیک) فراہم کرنا</h4>
+                    <p className={styles.guideText}>'تجزیاتی نوٹس شامل کریں' پر کلک کریں اور کوئی بھی دستی مشاہدہ، دیکھ بھال کا نوٹ یا مخصوص حالات ٹائپ کریں یا بول کر بتائیں جس کا AI کو علم ہونا چاہیے۔</p>
                     
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>3. پیرامیٹر کی اصلاحات</h4>
-                    <p>جب AI تجزیہ مکمل ہو جائے، تو آپ کو پیش گوئی شدہ نقص کا اسکور نظر آئے گا۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو آپ نیچے <strong>'اختیاری پیرامیٹر کی اصلاحات'</strong> سیکشن میں اقدار میں تبدیلی کر سکتے ہیں۔</p>
-                    <p style={{ marginBottom: '1rem' }}>اسکورز کو درست کریں اور <strong>'درست شدہ اسکور جمع کریں'</strong> پر کلک کریں۔ نتائج اور مطلوبہ اقدامات آپ کے ماہرانہ فیڈبیک کے مطابق فوری طور پر اپ ڈیٹ ہو جائیں گے۔</p>
+                    <h4 className={styles.guideSectionTitle}>3. پیرامیٹر کی اصلاحات</h4>
+                    <p className={styles.guideText}>جب AI تجزیہ مکمل ہو جائے، تو آپ کو پیش گوئی شدہ نقص کا اسکور نظر آئے گا۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو آپ نیچے <strong>'اختیاری پیرامیٹر کی اصلاحات'</strong> سیکشن میں اقدار میں تبدیلی کر سکتے ہیں۔</p>
+                    <p className={styles.guideText}>اسکورز کو درست کریں اور <strong>'درست شدہ اسکور جمع کریں'</strong> پر کلک کریں۔ نتائج اور مطلوبہ اقدامات آپ کے ماہرانہ فیڈبیک کے مطابق فوری طور پر اپ ڈیٹ ہو جائیں گے۔</p>
                     
-                    <h4 style={{ color: 'white', marginBottom: '0.5rem' }}>4. پیرامیٹر ڈیفیکٹ اسکور کی تفصیل</h4>
-                    <p style={{ marginBottom: '0.5rem', fontStyle: 'italic', color: '#9ca3af' }}>نوٹ: یہ ٹرانسفارمر کا مجموعی ہیلتھ اسکور نہیں ہے۔ یہ انفرادی پیرامیٹرز کے نقص کا اسکور ہے جو حتمی ہیلتھ انڈیکس کا حساب لگانے کے لیے استعمال ہوتا ہے۔</p>
-                    <p style={{ marginBottom: '0.5rem' }}><strong>1 بہترین پیرامیٹر اسکور ہے:</strong> یہ ظاہر کرتا ہے کہ حصہ "بہترین" یا "نئی" حالت میں ہے اور کوئی نقص نہیں ہے۔</p>
-                    <p style={{ marginBottom: '0.5rem' }}><strong>6 بدترین پیرامیٹر اسکور ہے:</strong> انتہائی خراب حالت۔ اگر اسکور 6 ہے، تو اس کا مطلب ہے کہ بڑا مسئلہ ہے جیسے کہ بڑی لیکیج یا جلا ہوا کنیکٹر۔</p>
-                    <ul style={{ listStyleType: 'disc', marginRight: '1.5rem', marginBottom: '1rem' }}>
-                      <li><strong>1.0 &ndash; 3.4 (اچھا / نارمل):</strong> کوئی ایکشن نہیں یا معمولی دیکھ بھال کی ضرورت (جیسے صفائی، پینٹ، کنکشن ٹائٹ کرنا)۔</li>
-                      <li><strong>3.5 &ndash; 4.4 (درمیانہ / معتدل):</strong> موقع پر مرمت کی ضرورت (جیسے ویلڈنگ، تیل بھرنا، یا موقع پر تبدیلی)۔</li>
-                      <li><strong>4.5 &ndash; 6.0 (انتہائی خراب / نازک):</strong> فوری توجہ یا ورکشاپ (TSW) میں مکمل اوور ہال کی ضرورت۔</li>
+                    <h4 className={styles.guideSectionTitle}>4. پیرامیٹر ڈیفیکٹ اسکور کی تفصیل</h4>
+                    <p className={styles.guideNote}>نوٹ: یہ ٹرانسفارمر کا مجموعی ہیلتھ اسکور نہیں ہے۔ یہ انفرادی پیرامیٹرز کے نقص کا اسکور ہے۔</p>
+                    <p className={styles.guideText}><strong>1 بہترین پیرامیٹر اسکور ہے:</strong> حصہ "بہترین" یا "نئی" حالت میں ہے۔</p>
+                    <p className={styles.guideText}><strong>6 بدترین پیرامیٹر اسکور ہے:</strong> انتہائی خراب حالت (جیسے بڑی لیکیج)۔</p>
+                    <ul className={styles.guideList}>
+                      <li className={styles.guideListItem}><div className={styles.guideDot}></div><span><strong>1.0 &ndash; 3.4 (اچھا / نارمل):</strong> کوئی ایکشن نہیں یا معمولی دیکھ بھال۔</span></li>
+                      <li className={styles.guideListItem}><div className={styles.guideDot} style={{background: '#facc15'}}></div><span><strong>3.5 &ndash; 4.4 (درمیانہ / معتدل):</strong> موقع پر مرمت کی ضرورت۔</span></li>
+                      <li className={styles.guideListItem}><div className={styles.guideDot} style={{background: '#ef4444'}}></div><span><strong>4.5 &ndash; 6.0 (انتہائی خراب / نازک):</strong> فوری توجہ یا ورکشاپ (TSW) میں مکمل اوور ہال۔</span></li>
                     </ul>
                   </div>
                 )}
 
-                <div className={styles.popupActions} style={{ marginTop: '1.5rem', justifyContent: 'flex-end', direction: 'ltr' }}>
-                  <button className={styles.allowBtn} onClick={() => setShowGuide(false)} style={{ backgroundColor: '#374151' }}>
+                <div className={styles.popupActions} style={{ justifyContent: 'flex-end', direction: 'ltr' }}>
+                  <button className={styles.denyBtn} onClick={() => setShowGuide(false)}>
                     {guideLanguage === 'en' ? 'Close Guide' : 'گائیڈ بند کریں'}
                   </button>
                 </div>
@@ -910,20 +866,19 @@ export default function UserDashboard() {
           {showVerificationModal && (
             <div className={styles.locationPopupOverlay}>
               <div className={styles.locationPopup} style={{ maxWidth: '450px' }}>
-                <h3 style={{ color: '#f59e0b', marginBottom: '1rem' }}>⚠️ Image Verification</h3>
+                <h3 style={{ color: '#f59e0b', margin: '0 0 1rem 0' }}>⚠️ Image Verification</h3>
                 <p style={{ marginBottom: '0.5rem' }}>
                   The uploaded images have a <strong>{(verificationScore * 100).toFixed(0)}%</strong> similarity match with the stored images for transformer <strong>{transformerId}</strong>.
                 </p>
-                <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.9rem' }}>
+                <p style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
                   This could be the same transformer from a different angle. Do you want to proceed?
                 </p>
                 <div className={styles.popupActions}>
                   <button 
                     className={styles.allowBtn} 
                     onClick={() => handleVerificationConfirm(true)}
-                    style={{ background: '#22c55e' }}
                   >
-                    Yes, same transformer
+                    Yes, proceed
                   </button>
                   <button 
                     className={styles.denyBtn} 
@@ -981,71 +936,35 @@ export default function UserDashboard() {
           {/* Feedback Section (Accessible to both user and admin roles) */}
           {(currentUserRole === 'user' || currentUserRole === 'admin') && (
             <div className={styles.inputGroup} style={{ marginTop: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+              <div className={styles.feedbackHeader}>
                 <button
                   type="button"
                   onClick={() => setShowFeedback(!showFeedback)}
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: '#f97316',
-                    color: 'white',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                    transition: 'transform 0.2s'
-                  }}
-                  title={showFeedback ? "Close Feedback" : "Add Feedback"}
+                  className={styles.feedbackToggleBtn}
+                  title={showFeedback ? "Hide Notes" : "Add Notes"}
                 >
-                  {showFeedback ? <FaTimes size={18} /> : <FaCommentDots size={20} />}
+                  {showFeedback ? <FaTimes size={18} /> : <FaCommentDots size={18} />}
                 </button>
-                <span className={styles.label} style={{ margin: 0, fontSize: '0.95rem' }}>
+                <span className={styles.label} style={{ margin: 0, textTransform: 'none' }}>
                   {showFeedback ? "Hide Analysis Notes" : "Add Analysis Notes (Optional)"}
                 </span>
               </div>
 
               {showFeedback && (
-                <div style={{ position: 'relative', animation: 'fadeIn 0.3s ease-in-out' }}>
+                <div className={styles.feedbackWrapper}>
                   <textarea
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     placeholder="Enter any manual observations, maintenance notes, or specific conditions..."
-                    className={styles.input}
-                    style={{
-                      minHeight: '100px',
-                      padding: '1rem',
-                      paddingRight: '3rem',
-                      resize: 'vertical',
-                      lineHeight: '1.5',
-                      borderRadius: '12px'
-                    }}
+                    className={`${styles.input} ${styles.feedbackTextarea}`}
                   />
                   <button
                     type="button"
                     onClick={startRecording}
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      top: '12px',
-                      background: isRecording ? 'rgba(239, 68, 68, 0.1)' : 'none',
-                      border: 'none',
-                      color: isRecording ? '#ef4444' : '#9ca3af',
-                      cursor: 'pointer',
-                      borderRadius: '50%',
-                      padding: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s',
-                      boxShadow: isRecording ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none'
-                    }}
+                    className={`${styles.micBtn} ${isRecording ? styles.micBtnRecording : ''}`}
                     title={isRecording ? "Listening..." : "Click to Speak"}
                   >
-                    <FaMicrophone size={isRecording ? 22 : 20} />
+                    <FaMicrophone size={16} />
                   </button>
                 </div>
               )}
@@ -1063,24 +982,24 @@ export default function UserDashboard() {
         <h2 className={styles.sectionTitle}>AI Analysis Results</h2>
 
         {analysisResult && (
-          <div style={{ backgroundColor: 'rgba(56, 189, 248, 0.1)', borderLeft: guideLanguage === 'en' ? '4px solid #38bdf8' : 'none', borderRight: guideLanguage === 'ur' ? '4px solid #38bdf8' : 'none', padding: '12px 16px', borderRadius: '4px', marginBottom: '20px', direction: guideLanguage === 'ur' ? 'rtl' : 'ltr', textAlign: guideLanguage === 'ur' ? 'right' : 'left' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <h4 style={{ color: '#38bdf8', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className={styles.infoBox} style={{ direction: guideLanguage === 'ur' ? 'rtl' : 'ltr', textAlign: guideLanguage === 'ur' ? 'right' : 'left' }}>
+            <div className={styles.infoBoxHeader}>
+              <h4 className={styles.infoBoxTitle}>
                  <FaBookOpen /> {guideLanguage === 'en' ? 'Quick Guide: Score Corrections' : 'فوری گائیڈ: اسکور کی اصلاحات'}
               </h4>
               <button 
                 onClick={() => setGuideLanguage(guideLanguage === 'en' ? 'ur' : 'en')}
-                style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: 'transparent', color: '#38bdf8', border: '1px solid #38bdf8', cursor: 'pointer', fontSize: '0.75rem' }}
+                className={styles.infoBoxLangBtn}
               >
                 {guideLanguage === 'en' ? 'اردو' : 'English'}
               </button>
             </div>
             {guideLanguage === 'en' ? (
-              <p style={{ color: '#e0f2fe', margin: 0, fontSize: '0.9rem', lineHeight: '1.5' }}>
+              <p className={styles.infoBoxText}>
                 Review the parameter scores below. If you believe the model's prediction is inaccurate, scroll down to the <strong>"Optional Parameter Corrections"</strong> section to manipulate the values. Click "Submit Corrected Scores" to instantly update the analysis results based on your expert feedback.
               </p>
             ) : (
-              <p style={{ color: '#e0f2fe', margin: 0, fontSize: '0.95rem', lineHeight: '1.6', fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu, Arial' }}>
+              <p className={styles.infoBoxText} style={{ fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu, Arial', fontSize: '1.05rem', lineHeight: '1.8' }}>
                 نیچے دیے گئے پیرامیٹر کے اسکورز کا جائزہ لیں۔ اگر آپ کو لگتا ہے کہ ماڈل کی پیش گوئی غلط ہے، تو اقدار میں تبدیلی کے لیے نیچے <strong>"اختیاری پیرامیٹر کی اصلاحات"</strong> سیکشن پر جائیں۔ اپنے ماہرانہ فیڈبیک کے مطابق تجزیہ کے نتائج کو فوری اپ ڈیٹ کرنے کے لیے "درست شدہ اسکور جمع کریں" پر کلک کریں۔
               </p>
             )}
@@ -1167,25 +1086,25 @@ export default function UserDashboard() {
             </div>
 
             {/* Health Score Interpretation UI */}
-            <div className={styles.warningBox} style={{ backgroundColor: '#1e293b', borderColor: '#3b82f6', marginTop: '1rem', color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <h3 style={{ color: '#38bdf8', marginBottom: '0.5rem' }}>Parameter Defect Score Interpretation</h3>
-              <p style={{ fontSize: '0.9rem', color: '#cbd5e1', fontStyle: 'italic', marginBottom: '0.5rem' }}>Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
-                <div style={{ flex: '1 1 300px', backgroundColor: 'rgba(34, 197, 94, 0.1)', padding: '0.75rem', borderRadius: '0.5rem', borderLeft: '4px solid #22c55e' }}>
+            <div className={styles.interpretationBox}>
+              <h3 className={styles.infoBoxTitle} style={{ marginBottom: '0.5rem' }}>Parameter Defect Score Interpretation</h3>
+              <p className={styles.interpretationNote}>Note: This is NOT the total health index of the transformer. These are the individual parameter defect scores used to calculate the final health index.</p>
+              <div className={styles.interpCards}>
+                <div className={`${styles.interpCard} ${styles.interpCardGreen}`}>
                   <strong>1 is the Best Parameter Score:</strong> <br/>
-                  <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>This indicates the component is in "Excellent" or "New" condition with no detectable defects.</span>
+                  <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>This indicates the component is in "Excellent" or "New" condition with no detectable defects.</span>
                 </div>
-                <div style={{ flex: '1 1 300px', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '0.5rem', borderLeft: '4px solid #ef4444' }}>
+                <div className={`${styles.interpCard} ${styles.interpCardRed}`}>
                   <strong>6 is the Worst Parameter Score:</strong> <br/>
-                  <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>This represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).</span>
+                  <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>This represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).</span>
                 </div>
               </div>
-              <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1rem', borderRadius: '0.5rem' }}>
+              <div className={styles.interpLegendBox}>
                 <strong style={{ color: 'white' }}>Score Intervals:</strong>
-                <ul style={{ listStyleType: 'none', paddingLeft: 0, marginTop: '0.5rem', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <li><span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#22c55e', marginRight: '8px' }}></span> <strong>1.0 &ndash; 3.4 (Good / Normal):</strong> No action or minor maintenance needed (e.g., paint, clean, or tighten connections).</li>
-                  <li><span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#facc15', marginRight: '8px' }}></span> <strong>3.5 &ndash; 4.4 (Moderate / Fair):</strong> Requires active onsite repair (e.g., welding, oil top-up, or onsite replacement).</li>
-                  <li><span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', marginRight: '8px' }}></span> <strong>4.5 &ndash; 6.0 (Critical / Poor):</strong> Requires immediate attention or being sent to the workshop (TSW) for a full overhaul.</li>
+                <ul className={styles.interpLegendList}>
+                  <li className={styles.interpLegendItem}><div className={styles.dot} style={{backgroundColor: '#22c55e'}}></div> <span><strong>1.0 &ndash; 3.4 (Good / Normal):</strong> No action or minor maintenance needed.</span></li>
+                  <li className={styles.interpLegendItem}><div className={styles.dot} style={{backgroundColor: '#facc15'}}></div> <span><strong>3.5 &ndash; 4.4 (Moderate / Fair):</strong> Requires active onsite repair (e.g., welding, oil top-up).</span></li>
+                  <li className={styles.interpLegendItem}><div className={styles.dot} style={{backgroundColor: '#ef4444'}}></div> <span><strong>4.5 &ndash; 6.0 (Critical / Poor):</strong> Requires immediate attention or workshop (TSW).</span></li>
                 </ul>
               </div>
             </div>

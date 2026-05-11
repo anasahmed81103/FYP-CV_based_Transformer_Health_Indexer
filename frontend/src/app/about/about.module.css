@@ -1,0 +1,295 @@
+/* ========================================
+   ABOUT PAGE — CSS MODULE
+   Migrated from inline styles (audit fix L7)
+   ======================================== */
+
+/* --- Page Layout --- */
+.mainContent {
+  padding-bottom: 100px;
+  display: flex;
+  justify-content: center;
+}
+
+.contentWrapper {
+  max-width: 1000px;
+  width: 100%;
+  text-align: left;
+}
+
+/* --- Page Header --- */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  gap: 1rem;
+}
+
+.pageTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  text-align: left;
+  margin: 0;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.pageSubtitle {
+  text-align: left;
+  margin-bottom: 60px;
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.65);
+  max-width: 700px;
+  line-height: 1.7;
+}
+
+/* --- Section --- */
+.section {
+  margin-bottom: 80px;
+}
+
+.sectionLate {
+  margin-top: 80px;
+}
+
+.sectionTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.02em;
+}
+
+.sectionIcon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 60px;
+}
+
+/* --- Pipeline Steps --- */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stepCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stepCard:hover {
+  border-color: rgba(249, 115, 22, 0.25);
+  transform: translateX(4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.iconBox {
+  min-width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Icon color variants */
+.iconPurple  { background: #8b5cf6; }
+.iconBlue    { background: #3b82f6; }
+.iconGreen   { background: #10b981; }
+.iconAmber   { background: #f59e0b; }
+.iconRed     { background: #ef4444; }
+.iconPink    { background: #ec4899; }
+.iconOrange  { background: var(--accent-primary); }
+.iconTeal    { background: var(--accent-secondary); }
+
+.stepContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.stepTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.stepDesc {
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.stepDesc strong {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+/* --- Arrow connector --- */
+.arrowConnector {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0;
+  color: rgba(249, 115, 22, 0.5);
+}
+
+/* --- Info Grid (History & RBAC) --- */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 30px;
+}
+
+.infoCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 30px;
+  transition: border-color 0.2s ease;
+}
+
+.infoCard:hover {
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.infoCardTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.infoCardTitle svg {
+  color: var(--accent-secondary);
+  flex-shrink: 0;
+}
+
+.infoCardBody {
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.7;
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+}
+
+.infoCardList {
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.8;
+  margin: 10px 0 0 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+}
+
+.infoCardList strong {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+}
+
+/* --- API Cards Grid --- */
+.apiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.apiCard {
+  background: rgba(249, 115, 22, 0.05);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 12px;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.6;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.apiCard:hover {
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.35);
+  transform: translateY(-2px);
+}
+
+.apiCardIcon {
+  margin-bottom: 12px;
+  color: var(--accent-secondary);
+}
+
+.apiCard h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.apiCard p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  .pageTitle {
+    font-size: 2rem;
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .stepCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .sectionTitle {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 1.6rem;
+  }
+
+  .pageSubtitle {
+    font-size: 1rem;
+    margin-bottom: 40px;
+  }
+
+  .stepCard {
+    padding: 18px;
+  }
+
+  .apiGrid {
+    grid-template-columns: 1fr;
+  }
+}
