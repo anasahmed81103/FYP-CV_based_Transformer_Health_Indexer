@@ -151,11 +151,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _pickImages() async {
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E293B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white),
+                title: const Text('Photo Library', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImagesFromGallery();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera, color: Colors.white),
+                title: const Text('Camera', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromCamera();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImagesFromGallery() async {
     final List<XFile> selectedImages = await _picker.pickMultiImage();
     if (selectedImages.isNotEmpty) {
       setState(() {
         _images.addAll(selectedImages);
+      });
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    final XFile? selectedImage = await _picker.pickImage(source: ImageSource.camera);
+    if (selectedImage != null) {
+      setState(() {
+        _images.add(selectedImage);
       });
     }
   }
@@ -430,7 +473,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: _pickImages,
+                  onTap: _showImageSourceDialog,
                   child: Container(
                     width: 100,
                     height: 100,
