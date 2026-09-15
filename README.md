@@ -1,4 +1,4 @@
----
+﻿---
 title: KE Portal FastAPI
 emoji: ⚡
 colorFrom: blue
@@ -8,118 +8,353 @@ app_port: 8000
 pinned: false
 ---
 
+<div align="center">
+
 # ⚡ KE-Portal: Transformer Health Indexer
 
-![Project Banner](https://img.shields.io/badge/AI-Powered-6366F1?style=for-the-badge) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white) ![Next JS](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white) ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white) ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+### AI-Powered Structural Health Assessment of Pole-Mounted Transformers
 
-An advanced Computer Vision and Deep Learning system for real-time **Pole Mounted Transformer (PMT)** health analysis. Predict failures before they happen with state-of-the-art AI technology integrated beautifully into both a Web Portal and a Mobile Application.
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.119-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)](https://flutter.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
----
+**Final Year Project · Department of Computer Science · NED University of Engineering and Technology**
 
-## 🌟 Key Features
+[📄 Full Report](FYP_Final_Report.pdf) · [🚀 Quick Inference](#-quickstart--inference) · [🌐 Deploy Live](DEPLOYMENT.md) · [📊 Benchmarks](#-engineering-highlights--benchmarks)
 
-- **Intelligence Pipeline:**
-  - **PMT Classifier Verification:** Non-associated images are immediately filtered using a dedicated classifying neural network to optimize computational load.
-  - **Health Regression Engine:** Evaluates 13 critical structural parameters (e.g., Oil Leakages, Rust, Bushing Cracks) using an **EfficientNet-B0** model to output a concrete Health Defect Percentage.
-- **Grad-CAM Visualizations:** Automatically overlays predictive interactive heatmaps (Grad-CAM) marking exactly where structural defects exist on the original field photograph.
-- **Role-Based Access Control (RBAC):** Strict security tiers (Admin, User, Suspended).
-- **Cross-Platform Architecture:**
-  - **Web Portal**: Next.js & Drizzle ORM powered frontend.
-  - **Mobile App**: Flutter application encompassing GPS mapping, automated Reverse Geocoding (Nominatim), and built-in **Speech-to-Text microphone feedback**.
-- **In-Depth History & Auditing:** PostgreSQL data lakes logging image assets, generated heatmaps, specific geolocation footprinting, and manually collected technician notes.
+</div>
 
 ---
 
-## 🚀 Getting Started
+## Visual Proof
 
-### 1. Prerequisites
+<div align="center">
 
-You must manually configure the raw dataset environment initially due to heavy file sizes. Create a folder named `data` in the root repository.
+### Field Photo → Grad-CAM Attention Analysis
 
-```text
-Transformer_Health_Index/
+![Banner Strip](docs/assets/banner_strip.png)
+
+*Left: raw field photograph of a pole-mounted transformer.
+Right: Grad-CAM heat-map from EfficientNet-B0 — warmer colours highlight regions with the highest predicted structural defect severity.*
+
+---
+
+### Live Inference Output Card
+
+![Inference Demo](docs/assets/inference_demo.jpg)
+
+*Annotated result card: per-parameter defect bars, overall Health Index, and GOOD / FAIR / POOR grade.*
+
+</div>
+
+---
+
+## 🔬 Research Summary
+
+This system solves a critical infrastructure challenge: **automated, non-invasive health assessment of pole-mounted power transformers (PMTs)** from field photographs. Manual inspection is infrequent, inconsistent, and unable to scale across large distribution networks.
+
+**The pipeline:**
+1. A **PMT Classifier** (EfficientNet-B0) filters non-transformer images before any expensive computation.
+2. A **Health Regression Model** (EfficientNet-B0, 13-output head) simultaneously estimates severity of 13 structural defect parameters on a **0–6 point scale**.
+3. **Grad-CAM** localises the defect region, providing explainable AI (XAI) evidence for technicians.
+4. An **Adaptive Feedback Layer** learns from technician corrections in deployment, continuously improving accuracy.
+
+**13 assessed defect parameters:**
+> Oil Leakage · Corrosion · Rust · Paint Fading · Bushing Cracks · Broken Connectors · Insulator Contamination · Burnt / Overheating · Deformed Tank / Bent Fins · Loose / Unsafe Wiring · Dust Accumulation · Gasket Leakage · Damaged / Bent Pole Structure
+
+---
+
+## 📊 Engineering Highlights & Benchmarks
+
+### Model Performance — EfficientNet-B0, Test Set (779 samples)
+
+| Metric | Value |
+|---|---|
+| **Overall MAE** (avg across 13 parameters, 0–6 scale) | **0.091** |
+| **Overall RMSE** | 0.172 |
+| **Mean R² Score** (per-parameter average) | **0.989** |
+| Best parameter (lowest MAE) | Dust Accumulation: 0.070 |
+| Hardest parameter (highest MAE) | Paint Fading: 0.132 |
+| Test set size | 779 images |
+| Score bins | Good (0–2) · Fair (2–4) · Poor (4–6) per param |
+
+### System Specifications
+
+| Specification | Detail |
+|---|---|
+| Framework | PyTorch 2.x · torchvision 0.24 |
+| Backbone | EfficientNet-B0 (ImageNet pretrained, fine-tuned) |
+| Output | 13 regression heads + scalar Health Index |
+| Inference hardware | CPU-only tested (Intel Core i7) |
+| Inference time | ~180 ms / image on CPU |
+| Input resolution | 224 × 224 px (RGB) |
+| Mixed Precision | Optional AMP FP16 for GPU deployment |
+| Optimiser | Adam (lr=5×10⁻⁴, weight decay=10⁻⁴) |
+| Scheduler | Cosine annealing |
+| Augmentation | Horizontal flip · Rotation ±15° · Colour jitter · Random erasing |
+| Early stopping | Patience = 10 epochs |
+
+---
+
+### Full Evaluation Dashboard
+
+![Summary Dashboard](docs/assets/fig8_dashboard.png)
+
+### Predicted vs Actual — All 13 Parameters
+
+![Pred vs Actual](docs/assets/fig3_pred_vs_actual.png)
+
+### Per-Parameter MAE & RMSE
+
+![MAE RMSE](docs/assets/fig1_mae_rmse.png)
+
+### Per-Parameter R² Score
+
+![R2 Scores](docs/assets/fig2_r2.png)
+
+### Residual Distributions
+
+![Residuals](docs/assets/fig4_residuals.png)
+
+---
+
+## 🏗️ System Architecture
+
+![Architecture](docs/assets/architecture.png)
+
+```
+Input Image
+    │
+    ▼
+PMT Classifier (EfficientNet-B0)
+    ├── Non-PMT → Rejected
+    └── PMT ──►
+            Health Regression Model (EfficientNet-B0, 13 heads)
+                    │
+                    ├── 13 Defect Scores (0–6)
+                    ├── Health Index (sum, 0–78)
+                    │
+                    ▼
+            Grad-CAM Generator ── attention heatmap
+                    │
+                    ▼
+            Adaptive Learning Layer ── learns from corrections
+                    │
+                    ▼
+            Result: { scores, healthIndex, grade, gradcam }
+```
+
+### Repository Structure
+
+```
+transformer_health_index/
+│
+├── inference.py                  ← Standalone inference (image / folder / webcam)
+├── requirements.txt              ← Python dependencies
+├── environment.yml               ← Conda environment
+├── Dockerfile                    ← Backend container
+├── DEPLOYMENT.md                 ← Full deployment guide
+├── FYP_Final_Report.pdf          ← Submitted university report
+│
+├── backend/                      ← FastAPI application
+│   ├── api/main.py               ← REST API endpoints
+│   ├── evaluate.py               ← Inference engine
+│   ├── gradCam.py                ← Grad-CAM + Supabase upload
+│   ├── adaptation.py             ← Adaptive learning layer
+│   └── adjustment_layer.py       ← Global correction aggregation
+│
+├── core/                         ← Data pipeline & config
+│   ├── config.py                 ← Hyperparameters & paths
+│   ├── dataset.py                ← PyTorch Dataset classes
+│   ├── augment.py                ← Transform builders
+│   └── data_cleaning.py          ← CSV pre-processing & splits
+│
+├── models/                       ← Neural network architectures
+│   ├── efficientnet.py           ← EfficientNet-B0 regression (13 heads)
+│   ├── pmt_classifier.py         ← EfficientNet-B0 binary classifier
+│   ├── resnet.py                 ← ResNet baseline
+│   └── custom_cnn.py             ← Lightweight CNN baseline
+│
+├── frontend/                     ← Next.js 15 web portal
+├── mobile_app/                   ← Flutter field application
+│
+├── demo/                         ← Sample transformer images for instant testing
+├── docs/assets/                  ← README visuals & benchmark figures
+│
 ├── data/
-│   ├── raw/
-│   │   ├── metadata.csv
-│   │   └── images/
+│   ├── raw/annotations.xlsx      ← Ground-truth annotation spreadsheet
+│   └── processed/                ← train / val / test CSVs (auto-generated)
+│
+└── outputs/
+    ├── checkpoints/              ← Trained model weights (.pth)
+    ├── test_results/             ← Evaluation plots & metrics
+    └── gradcam/                  ← Generated Grad-CAM overlays
 ```
 
-### 2. Backend Setup (PyTorch Intelligence Engine)
+---
 
-Create an isolated Python environment and install the ML requirements.
+## 🚀 Quickstart / Inference
+
+### Prerequisites
+- Python 3.10 or 3.11
+- No GPU required — full CPU-only inference supported
+
+### 3-Command Start
 
 ```bash
-python -m venv venv
-venv\Scripts\activate
+git clone https://github.com/anasahmed81103/FYP-CV_based_Transformer_Health_Indexer.git
+cd FYP-CV_based_Transformer_Health_Indexer
 pip install -r requirements.txt
+python inference.py --source demo/
 ```
 
-**Generate the Processed Datasets & Train Models:**
+### Options
 
 ```bash
-python core/data_cleaning.py
-python backend/train.py
+# Any single image
+python inference.py --source path/to/transformer.jpg --save
+
+# All images in a folder
+python inference.py --source path/to/folder/ --save
+
+# Live webcam (press 'q' quit, 's' save frame)
+python inference.py --webcam
+
+# Skip Grad-CAM for faster results
+python inference.py --source demo/ --no-gradcam --save
 ```
 
-**Start the Deep Learning Server:**
-_Note: Bind to `0.0.0.0` if you plan to access the API remotely via your Mobile App on the same LAN._
+Each result includes:
+- **Health Index** (0–78; lower = healthier)
+- **Grade**: GOOD / FAIR / POOR
+- **13 per-parameter scores** (0–6 each)
+- **Grad-CAM heatmap** (saved alongside result with `--save`)
+
+---
+
+## ⚙️ Full Stack Setup
+
+### Backend (FastAPI)
 
 ```bash
-python -m uvicorn backend.api.main:app --reload --host 0.0.0.0
+# Activate venv (see Quickstart above)
+python -m uvicorn backend.api.main:app --reload --host 0.0.0.0 --port 8000
+# Interactive API docs: http://localhost:8000/docs
 ```
 
-### 3. Frontend Setup (Next.js Web Portal)
-
-The web portal acts as the routing orchestrator and provides the primary visual dashboard.
+### Web Portal (Next.js)
 
 ```bash
 cd frontend
 npm install
+# Set NEXT_PUBLIC_API_URL=http://localhost:8000 in frontend/.env.local
 npm run dev
+# Open: http://localhost:3000
 ```
 
-_Visit `http://localhost:3000` to interact with the Next.js Dashboard._
+**Demo account:** `alicena@gmail.com` / `123abcABC`
 
-**Test Account:**
-
-- **Email:** `alicena@gmail.com`
-- **Password:** `123abcABC`
-
-### 4. Mobile App Setup (Flutter)
-
-The newly integrated mobile application allows field technicians to rapidly evaluate transformers with voice notes and automated geofencing.
+### Mobile App (Flutter)
 
 ```bash
 cd mobile_app
-flutter run -d web-server --web-hostname <YOUR_LAN_IP>
+# Edit mobile_app/.env → API_BASE_URL=http://<LAN_IP>:3000
+flutter pub get
+flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080
 ```
 
-_Configure `<YOUR_LAN_IP>` (e.g. `192.168.100.15`) inside `mobile_app/.env` and `lib/services/api_service.dart` to securely bind requests through the Next.js reverse proxy gateway!_
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Docker, Hugging Face Spaces, Railway, and Render.
 
 ---
 
-## 📁 Project Architecture Map
+## 🧠 Training from Scratch
 
-```text
-Transformer_Health_Index/
-│
-├── 📁 backend/                       # Model evaluations, Grad-CAM, and FastAPI
-├── 📁 core/                          # Data cleaning, custom PyTorch datasets, and Augmentations
-├── 📁 models/                        # PyTorch Architectures (Custom CNN, ResNet, EfficientNet, PMT Classifier)
-│
-├── 📁 frontend/                      # Web Portal
-│   ├── 📁 src/app/                   # React Next.js UI Structure, Dashboards, Admin UI
-│   └── 📁 db/                        # Drizzle ORM Schema arrays & PostgreSQL routing
-│
-├── 📁 mobile_app/                    # Flutter Field Application
-│   ├── 📁 lib/screens/               # Stateful Mobile Views (Dashboards, Maps, About)
-│   └── 📁 lib/services/              # Bridging Dart logic to the Next.js / FastAPI Gateway
-│
-├── 📁 outputs/                       # Non-tracked Model Artifacts (.pth models, Heatmaps, MAE/R2 Reports)
-├── 📁 temp_uploads/                  # Live inference media buffer
-└── 📁 data/                          # Unignored Raw Dataset mapping
+```bash
+# 1. Place raw images in data/raw/images/ and annotations in data/raw/annotations.xlsx
+python core/data_cleaning.py             # generate train/val/test splits
+
+# 2. Train health regression model
+python backend/train.py
+
+# 3. Train PMT classifier
+python backend/train.py --model classifier
+
+# 4. Evaluate
+python backend/evaluate.py --model regression
+python test_efficientnet_b0.py           # regenerate all benchmark figures
 ```
 
 ---
 
-_© 2025 KE Portal. Developed to modernize and secure field infrastructure matrices._
+## 🔌 REST API Reference
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Health check |
+| `/predict` | POST | Analyse transformer images → scores + Grad-CAM |
+| `/submit-corrections` | POST | Technician corrections → adaptive learning update |
+| `/verify-transformer` | POST | Verify new images match stored transformer features |
+| `/extract-hashes` | POST | Perceptual hash for duplicate detection |
+
+**Example:**
+```bash
+curl -X POST http://localhost:8000/predict \
+  -F "transformer_id=T001" \
+  -F "location=Gulberg, Lahore" \
+  -F "date=2026-09-16" \
+  -F "time=14:30" \
+  -F "files=@demo/sample_transformer_1.jpg"
+```
+
+---
+
+## 📱 Mobile App Features
+
+- 📷 Multi-image capture with guided overlay
+- 🗺️ GPS + Reverse Geocoding (Nominatim) — auto-fills location
+- 🎤 Speech-to-Text technician notes
+- 📊 Historical dashboard by transformer ID
+- 🔄 Submits when connectivity restores
+
+## 🌐 Web Portal Features
+
+- 🔐 Role-Based Access Control (Admin, Technician, Suspended)
+- 📈 Analytics dashboard — health trends by zone/date
+- 🔍 Per-transformer audit log with images and Grad-CAM overlays
+- ⚙️ Admin panel — user management and adjustment viewer
+- 🗄️ Drizzle ORM + PostgreSQL data persistence
+
+---
+
+## 📑 Citation
+
+If you use this work in academic research, please cite:
+
+```bibtex
+@mastersthesis{ke_portal_2026,
+  title  = {KE-Portal: AI-Driven Structural Health Indexing of
+            Pole-Mounted Transformers using EfficientNet and Grad-CAM},
+  author = {Anas Ahmed},
+  school = {NED University of Engineering and Technology},
+  year   = {2026},
+  note   = {Final Year Project, Department of Computer Science}
+}
+```
+
+---
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE)
+
+---
+
+<div align="center">
+
+*Built with PyTorch · FastAPI · Next.js · Flutter*
+*NED University of Engineering and Technology · 2026*
+
+</div>
