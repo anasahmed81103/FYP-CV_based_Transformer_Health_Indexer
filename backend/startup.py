@@ -33,7 +33,7 @@ def download_models():
         local_path = os.path.join("outputs/checkpoints", filename)
 
         if os.path.exists(local_path):
-            print(f"✅ Already exists, skipping: {filename}")
+            print(f"Already exists, skipping: {filename}")
             continue
 
         try:

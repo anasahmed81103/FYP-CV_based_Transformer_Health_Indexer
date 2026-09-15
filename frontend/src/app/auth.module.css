@@ -1,0 +1,655 @@
+/* ========================================
+   AUTH SHARED CSS — login + signup
+   Split-panel on desktop, stacked on mobile
+   ======================================== */
+
+/* --- Base --- */
+.page {
+  min-height: 100dvh;
+  display: flex;
+  background: #080e0a;
+  position: relative;
+  overflow: hidden;
+}
+
+/* --- Background orbs (behind both panels) --- */
+.orb1,
+.orb2 {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+  z-index: 0;
+  animation: floatOrb 20s ease-in-out infinite;
+}
+
+.orb1 {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.18), transparent 70%);
+  top: -10%;
+  right: -5%;
+}
+
+.orb2 {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.14), transparent 70%);
+  bottom: -10%;
+  left: -5%;
+  animation-delay: 10s;
+}
+
+@keyframes floatOrb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(24px, -20px) scale(1.06); }
+  70%       { transform: translate(-16px, 14px) scale(0.96); }
+}
+
+/* ========================================
+   SPLIT LAYOUT
+   ======================================== */
+
+/* Left brand panel — login only */
+.brandPanel {
+  display: none; /* hidden on mobile */
+  position: relative;
+  z-index: 1;
+  flex: 0 0 42%;
+  background: linear-gradient(160deg, #0d1f12 0%, #081208 60%, #0a1a0e 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 3rem;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.brandTop {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.brandLogo {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+}
+
+.brandLogoMark {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #f97316, #ea6a05);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.brandLogoText {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: -0.01em;
+}
+
+.brandHeadline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.brandTag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f97316;
+}
+
+.brandTitle {
+  font-size: clamp(1.75rem, 2.5vw, 2.4rem);
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.brandTitle span {
+  color: #2dd4bf;
+}
+
+.brandDesc {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.7;
+  max-width: 320px;
+  margin: 0;
+}
+
+/* Stat pills in brand panel */
+.brandStats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.brandStat {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+}
+
+.brandStatIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brandStatIcon.orange {
+  background: rgba(249, 115, 22, 0.12);
+  color: #f97316;
+}
+
+.brandStatIcon.teal {
+  background: rgba(45, 212, 191, 0.12);
+  color: #2dd4bf;
+}
+
+.brandStatIcon.white {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.brandStatText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.brandStatValue {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+
+.brandStatLabel {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.04em;
+}
+
+.brandFooter {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.03em;
+}
+
+/* ========================================
+   FORM PANEL (right side / full on mobile)
+   ======================================== */
+.formPanel {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  min-height: 100dvh;
+}
+
+/* Back to home link */
+.backLink {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.backLink:hover {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   FORM CARD
+   ======================================== */
+.formCard {
+  width: 100%;
+  max-width: 440px;
+  animation: slideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Wider card for signup (more fields) */
+.formCardWide {
+  max-width: 480px;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================
+   CARD HEADER
+   ======================================== */
+.cardHeader {
+  margin-bottom: 2rem;
+}
+
+/* Small app slug at top — mobile only brand */
+.mobileSlug {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+  text-decoration: none;
+}
+
+.mobileSlugDot {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #f97316, #ea6a05);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.mobileSlugText {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cardTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.375rem 0;
+  line-height: 1.15;
+}
+
+.cardSubtitle {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ========================================
+   FORM FIELDS
+   ======================================== */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Two-column name row (signup only) */
+.nameRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.875rem;
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Input wrapper with icon */
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 0.875rem;
+  color: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.input {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 2.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.925rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  -webkit-autofill: unset;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(45, 212, 191, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.08);
+}
+
+/* Brighten icon on sibling focus */
+.inputWrapper:focus-within .inputIcon {
+  color: rgba(45, 212, 191, 0.6);
+}
+
+.inputError {
+  border-color: rgba(248, 113, 113, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.07) !important;
+}
+
+/* Password eye toggle */
+.eyeButton {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  padding: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.eyeButton:hover {
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Input with eye button — extra right padding */
+.inputWithEye {
+  padding-right: 2.75rem;
+}
+
+/* Error messages */
+.errorText {
+  font-size: 0.75rem;
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.errorAlert {
+  padding: 0.875rem 1rem;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* ========================================
+   PASSWORD STRENGTH (signup)
+   ======================================== */
+.strengthBar {
+  display: flex;
+  gap: 3px;
+  margin-top: 0.5rem;
+}
+
+.strengthSegment {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  transition: background 0.3s ease;
+}
+
+.strengthSegment.active.weak   { background: #f87171; }
+.strengthSegment.active.fair   { background: #fb923c; }
+.strengthSegment.active.good   { background: #facc15; }
+.strengthSegment.active.strong { background: #4ade80; }
+
+.strengthLabel {
+  font-size: 0.72rem;
+  margin-top: 0.3rem;
+  font-weight: 600;
+}
+
+.strengthLabel.weak   { color: #f87171; }
+.strengthLabel.fair   { color: #fb923c; }
+.strengthLabel.good   { color: #facc15; }
+.strengthLabel.strong { color: #4ade80; }
+
+/* ========================================
+   FORM EXTRAS (remember me / forgot pw)
+   ======================================== */
+.formExtras {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -0.25rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.825rem;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Custom checkbox */
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #2dd4bf;
+  flex-shrink: 0;
+}
+
+.forgotLink {
+  font-size: 0.825rem;
+  color: rgba(45, 212, 191, 0.75);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.forgotLink:hover {
+  color: #2dd4bf;
+}
+
+/* ========================================
+   TERMS CHECKBOX (signup)
+   ======================================== */
+.termsLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.38);
+  cursor: pointer;
+  line-height: 1.55;
+  margin-top: 0.125rem;
+}
+
+.termsLink {
+  color: rgba(45, 212, 191, 0.8);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.termsLink:hover {
+  color: #2dd4bf;
+}
+
+/* ========================================
+   SUBMIT BUTTON
+   ======================================== */
+.submitBtn {
+  width: 100%;
+  padding: 0.9rem 1.5rem;
+  background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%);
+  border: none;
+  border-radius: 10px;
+  color: #022821;
+  font-size: 0.975rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 20px rgba(45, 212, 191, 0.3);
+  margin-top: 0.25rem;
+  letter-spacing: 0.01em;
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(45, 212, 191, 0.45);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.25);
+}
+
+.submitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Spinner inside button */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(2, 40, 33, 0.3);
+  border-top-color: #022821;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   CARD DIVIDER + FOOTER LINK
+   ======================================== */
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.cardFooterLink {
+  color: #f97316;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color 0.2s ease;
+}
+
+.cardFooterLink:hover {
+  color: #fb923c;
+}
+
+/* ========================================
+   RESPONSIVE — show brand panel on desktop
+   ======================================== */
+@media (min-width: 900px) {
+  .brandPanel {
+    display: flex;
+  }
+
+  .formPanel {
+    min-height: 0;
+  }
+
+  .backLink {
+    display: none; /* brand panel has the logo */
+  }
+
+  .mobileSlug {
+    display: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .mobileSlug {
+    display: flex;
+  }
+
+  .formPanel {
+    padding: 1.5rem;
+    padding-top: 4rem; /* room for backLink */
+  }
+
+  .nameRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .formPanel {
+    padding: 1rem;
+    padding-top: 3.5rem;
+  }
+
+  .cardTitle {
+    font-size: 1.5rem;
+  }
+}

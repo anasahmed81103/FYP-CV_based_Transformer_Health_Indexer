@@ -2,45 +2,47 @@ import Link from "next/link";
 import { Activity, Shield, Zap, TrendingUp } from "lucide-react";
 import styles from './page.module.css';
 
+export const metadata = {
+  title: "FAST — Transformer Health Indexer",
+  description: "AI-powered Computer Vision system for real-time pole-mounted transformer health analysis. Predict failures before they happen.",
+};
+
 export default function Home() {
   return (
     <div className={styles.container}>
-      {/* Background Effects */}
+      {/* Background */}
       <div className={styles.backgroundEffects}>
         <div className={styles.backgroundOrb1}></div>
         <div className={styles.backgroundOrb2}></div>
         <div className={styles.backgroundOrb3}></div>
       </div>
 
-      {/* Main Content */}
       <div className={styles.mainContent}>
         <div className={styles.contentWrapper}>
-          {/* Hero Section */}
-          <div className={styles.heroSection}>
+
+          {/* ── Hero ── */}
+          <section className={styles.heroSection}>
             <div className={styles.badge}>
-              <Activity size={16} />
+              <Activity size={13} />
               <span>AI-Powered Health Monitoring</span>
             </div>
 
-
             <h1 className={styles.title}>
-              <span className={styles.titleAccent}> FAST </span>
-              <span className={styles.titleAccent}> - </span>
-              Transformer Health
-              <span className={styles.titleAccent}> Indexer</span>
+              <span className={styles.titleLine1}>FAST</span>
+              Transformer{" "}
+              <span className={styles.titleAccent}>Health Indexer</span>
             </h1>
 
             <p className={styles.subtitle}>
-              Advanced Computer Vision system for real-time transformer health analysis.
-              Predict failures before they happen with state-of-the-art AI technology.
+              Advanced Computer Vision for pole-mounted transformer inspection.
+              Detect failures before they happen — with deep learning and Grad-CAM explainability.
             </p>
 
-            {/* CTA Buttons */}
             <div className={styles.ctaButtons}>
               <Link href="/signup" className={styles.btnPrimary}>
                 Get Started
-                <svg className={styles.btnIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                <svg className={styles.btnIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
               <Link href="/login" className={styles.btnSecondary}>
@@ -50,63 +52,80 @@ export default function Home() {
                 How It Works
               </Link>
             </div>
-          </div>
+          </section>
 
-          {/* Features Grid */}
-          <div className={styles.featuresGrid}>
-            <div className={styles.featureCard}>
-              <div className={styles.featureIconWrapper}>
-                <Zap className={styles.featureIcon} size={28} />
+          {/* ── Divider ── */}
+          <div className={styles.sectionDivider} />
+
+          {/* ── Features ── */}
+          <section className={styles.featuresSection}>
+            <p className={styles.sectionLabel}>Core Capabilities</p>
+            <h2 className={styles.sectionHeading}>Built for Field Engineers</h2>
+
+            <div className={styles.featuresGrid}>
+              <div className={styles.featureCard}>
+                <div className={styles.featureIconWrapper}>
+                  <Zap className={styles.featureIcon} size={22} />
+                </div>
+                <h3 className={styles.featureTitle}>Real-Time Analysis</h3>
+                <p className={styles.featureDescription}>
+                  Instant health assessment using advanced Grad-CAM visualization
+                  and EfficientNet deep learning models.
+                </p>
               </div>
-              <h3 className={styles.featureTitle}>Real-Time Analysis</h3>
-              <p className={styles.featureDescription}>
-                Instant health assessment using advanced Grad-CAM visualization and deep learning models.
-              </p>
-            </div>
 
-            <div className={styles.featureCard}>
-              <div className={styles.featureIconWrapper}>
-                <Shield className={styles.featureIcon} size={28} />
+              <div className={styles.featureCard}>
+                <div className={styles.featureIconWrapper}>
+                  <Shield className={styles.featureIcon} size={22} />
+                </div>
+                <h3 className={styles.featureTitle}>Predictive Maintenance</h3>
+                <p className={styles.featureDescription}>
+                  Identify potential failures before they occur with 95%+ accuracy
+                  across 13 critical hardware parameters.
+                </p>
               </div>
-              <h3 className={styles.featureTitle}>Predictive Maintenance</h3>
-              <p className={styles.featureDescription}>
-                Identify potential failures before they occur with 95%+ accuracy using transformer neural networks.
-              </p>
-            </div>
 
-            <div className={styles.featureCard}>
-              <div className={styles.featureIconWrapper}>
-                <TrendingUp className={styles.featureIcon} size={28} />
+              <div className={styles.featureCard}>
+                <div className={styles.featureIconWrapper}>
+                  <TrendingUp className={styles.featureIcon} size={22} />
+                </div>
+                <h3 className={styles.featureTitle}>Historical Tracking</h3>
+                <p className={styles.featureDescription}>
+                  Monitor condition trends over time with GPS-tagged inspection logs
+                  and comprehensive health index reports.
+                </p>
               </div>
-              <h3 className={styles.featureTitle}>Historical Tracking</h3>
-              <p className={styles.featureDescription}>
-                Monitor trends over time with comprehensive analytics and detailed health index reports.
-              </p>
             </div>
-          </div>
+          </section>
 
-          {/* Stats Section */}
+          {/* ── Stats ── */}
           <div className={styles.statsSection}>
             <div className={styles.statCard}>
               <div className={styles.statValue}>95%+</div>
               <div className={styles.statLabel}>Accuracy Rate</div>
             </div>
             <div className={styles.statCard}>
-              <div className={styles.statValue}>24/7</div>
-              <div className={styles.statLabel}>Monitoring</div>
+              <div className={styles.statValue}>13</div>
+              <div className={styles.statLabel}>Parameters Evaluated</div>
             </div>
             <div className={styles.statCard}>
               <div className={styles.statValue}>Real-Time</div>
-              <div className={styles.statLabel}>Analysis</div>
+              <div className={styles.statLabel}>Analysis Speed</div>
             </div>
           </div>
+
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         <footer className={styles.footer}>
           <p className={styles.footerText}>
-            © 2025 Transformer Health Indexer. Powered by Advanced AI.
+            © 2026 Transformer Health Indexer. Powered by Advanced AI.
           </p>
+          <nav className={styles.footerLinks} aria-label="Footer navigation">
+            <Link href="/about" className={styles.footerLink}>How It Works</Link>
+            <Link href="/login" className={styles.footerLink}>Sign In</Link>
+            <Link href="/signup" className={styles.footerLink}>Sign Up</Link>
+          </nav>
         </footer>
       </div>
     </div>

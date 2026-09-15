@@ -151,11 +151,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _pickImages() async {
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E293B),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white),
+                title: const Text('Photo Library', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImagesFromGallery();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera, color: Colors.white),
+                title: const Text('Camera', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromCamera();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImagesFromGallery() async {
     final List<XFile> selectedImages = await _picker.pickMultiImage();
     if (selectedImages.isNotEmpty) {
       setState(() {
         _images.addAll(selectedImages);
+      });
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    final XFile? selectedImage = await _picker.pickImage(source: ImageSource.camera);
+    if (selectedImage != null) {
+      setState(() {
+        _images.add(selectedImage);
       });
     }
   }
@@ -430,7 +473,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: _pickImages,
+                  onTap: _showImageSourceDialog,
                   child: Container(
                     width: 100,
                     height: 100,
@@ -719,9 +762,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               itemCount: result.gradCamImages.length,
               itemBuilder: (context, index) {
                 final path = result.gradCamImages[index];
-                // Path from backend is like "outputs/gradcam/filename.jpg"
-                // Construct full URL
-                final url = '${ApiService.imageBaseUrl}/$path';
+                // Path from backend is usually a full Supabase URL now.
+                // If it's not a full URL, we prepend the imageBaseUrl.
+                final url = path.startsWith('http') ? path : '${ApiService.imageBaseUrl}/$path';
 
                 return Container(
                   margin: const EdgeInsets.only(right: 12),
@@ -851,9 +894,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: const Border(left: BorderSide(color: Colors.green, width: 4)),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('1 is the Best Parameter Score:', style: TextStyle(fontWeight: FontWeight.bold)),
                     SizedBox(height: 4),
                     Text('Indicates the component is in "Excellent" or "New" condition with no detectable defects.', style: TextStyle(fontSize: 13, color: Colors.grey)),
@@ -868,9 +911,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: const Border(left: BorderSide(color: Colors.red, width: 4)),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('6 is the Worst Parameter Score:', style: TextStyle(fontWeight: FontWeight.bold)),
                     SizedBox(height: 4),
                     Text('Represents a "Critical" defect on that component. E.g., a Major Leak (Score 6) or a Hot Spot (Score 6).', style: TextStyle(fontSize: 13, color: Colors.grey)),

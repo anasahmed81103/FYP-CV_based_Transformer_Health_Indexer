@@ -30,7 +30,7 @@ def set_seed(seed: int = cfg.SEED):
 def get_device() -> torch.device:
     """Return the available compute device (GPU if available, else CPU)."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"🧠 Using device: {device}")
+    print(f"Using device: {device}")
     return device
 
 

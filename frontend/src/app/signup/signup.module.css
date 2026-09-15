@@ -4,7 +4,7 @@
 
 .container {
   background: radial-gradient(circle at top left, #0a0a0a 0%, #0c1f14 40%, #1a1a1a 100%);
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -183,7 +183,7 @@
 }
 
 .inputError {
-  border-color: #f87171 !important;
+  border-color: #f87171;
 }
 
 .eyeButton {
@@ -278,6 +278,11 @@
 .submitButton:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 12px 32px rgba(45, 212, 191, 0.5);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 4px 16px rgba(45, 212, 191, 0.3);
 }
 
 .submitButton:disabled {
